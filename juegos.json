@@ -3,10 +3,16 @@
     "id": "cloverpit",
     "titulo": "CloverPit",
     "imagen": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3314790/header.jpg",
-    "requisitos": "Intel Core i3, 1 GB RAM, Windows 10",
+    "requisitos": "Intel Core i3, 1 GB RAM, Windows 10, Gráfica Integrada",
     "clave": "tuweb.com",
     "telegram_channel_id": "-1004381947395",
     "telegram_message_id": 3,
-    "enlace_descarga": "https://gofile.io/d/f74e4e1a-28d5-4378-8918-8081d3186723"
+    "enlace_descarga": "https://gofile.io/d/f74e4e1a-28d5-4378-8918-8081d3186723",
+    "categoria": "Indies",
+    "etiqueta": "DESTACADO",
+    "destacado": true,
+    "sinopsis": "Enfréntate a desafíos tácticos en una experiencia roguelike única donde cada tirada y cada trébol puede cambiar tu destino en las profundidades del pozo.",
+    "tamano": "850 MB",
+    "fecha": "2025-02-28"
   }
 ]
