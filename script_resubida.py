@@ -1,64 +1,108 @@
-import os
-import json
-import requests
-from telethon.sync import TelegramClient
+importar os
+principalimportar
+importar solicitudes
+desde teletón.sync importar Cliente de Telegram
+desde teletón.sesiones importar Sesión de cadena
 
 API_ID = int(os.environ.get('TELEGRAM_API_ID', 0))
-API_HASH = os.environ.get('TELEGRAM_API_HASH', '')
+API_HASH = sistema operativo.environ.get('TELEGRAM_API_HASH', '')
+SESSION_STRING = os.environ.get('TELEGRAM_SESSION', '')
 
-def comprobar_enlace(url):
-    try:
-        r = requests.head(url, allow_redirects=True, timeout=10)
-        return r.status_code == 200
-    except:
-        return False
+def compromiso_enlace(url):
+    """Comprueba si el enlace de GoFile realmente contiene archivos."""
+    si no url o "gofile.io" no en url:
+        retorno Falso
+    intentar:
+        # Extraer el ID de la alfombra de la URL (ej: https://gofile.io/d/XYZ -> XYZ)
+        content_id = url.dividir('/')[-1]
+        api_url = f"https://api.gofile.io/contents/{contenido_id}"
+        r = solicitudes.get(api_url, tiempo de espera=10)
+        
+        si r.código_estado == 200:
+            datos = r.json()
+            # Si el estado es 'ok', el enlace sigue activo
+            retorno datos.get('estado') == 'está bien'
+        retorno Falso
+    excepto Excepción como e:
+        imprimir(f"Error al comprar la URL {url}: {e}")
+        retorno Falso
 
-def resubir_a_gofile(file_path):
-    try:
-        server = requests.get("https://api.gofile.io/getServer").json()['data']['server']
-        with open(file_path, 'rb') as f:
-            resp = requests.post(f"https://{server}.gofile.io/uploadFile", files={'file': f}).json()
-        return resp['data']['downloadPage']
-    except Exception as e:
-        print(f"Error subiendo a GoFile: {e}")
-        return None
+def resubir_a_gofile(ruta_archivo):
+    """Obtiene servidor activo y sube el archivo a GoFile."""
+    intentar:
+        # Obtener servidor libre
+        resp_server = solicitudes.get("https://api.gofile.io/servers", tiempo de espera=10).json()
+        si resp_servidor.get('estado') != 'está bien':
+            retorno Ninguno
+        
+        servidor = resp_server['datos']['servidores'][0]['nombre']
+        
+        # Subir archivo
+        con abierto(ruta_archivo, 'rb') como f:
+            upload_url = f"https://{servidor}.gofile.io/contents/uploadfile"
+            resp = solicitudes.post(upload_url, archivos={'archivo': f}, tiempo de espera=300).json()
+            
+        si resp.get('estado') == 'está bien':
+            retorno resp['datos']['descargarPágina']
+        retorno Ninguno
+    excepto Excepción como e:
+        imprimir(f"Error subiendo a GoFile: {e}")
+        retorno Ninguno
 
-def main():
-    if not os.path.exists('juegos.json'):
-        return
+def principal():
+    si no os.camino.existe('juegos.json'):
+        imprimir("No se encontró el archivo juegos.json")
+        retorno
 
-    with open('juegos.json', 'r', encoding='utf-8') as f:
+    con abierto('juegos.json', 'r', codificación='utf-8') como f:
         juegos = json.load(f)
 
-    cambios = False
+    cambios = Falso
 
-    for juego in juegos:
-        url_actual = juego.get('enlace_descarga', '')
-        print(f"Verificando {juego['titulo']}...")
+    # Conectar un Telegram usando la StringSession
+    con Cliente de Telegram(Sesión de cadena(CADENA_SESIÓN), API_ID, API_HASH) como cliente:
+        para juego en juegos:
+            url_actual = juego.get('enlace_descarga', '')
+            imprimir(f"Verificando: {juego['título']}...")
 
-        if not comprobar_enlace(url_actual):
-            print(f"⚠️ Enlace caído para {juego['titulo']}. Resubiendo...")
-            
-            with TelegramClient('bot_session', API_ID, API_HASH) as client:
-                chat_id = int(juego['telegram_channel_id'])
-                msg_id = int(juego['telegram_message_id'])
-                message = client.get_messages(chat_id, ids=msg_id)
+            si no compromiso_enlace(url_actual):
+                imprimir(f"⚠️ Enlace caído o no válido para {juego['título']}. Resubiendo desde Telegram...")
                 
-                temp_path = f"temp_{juego['id']}.7z"
-                client.download_media(message, file=temp_path)
+                intentar:
+                    chat_id = int(juego['id_canal_telegrama'])
+                    msg_id = int(juego['id_mensaje_telegrama'])
+                    mensaje = cliente.obtener_mensajes(id_chat, ids=id_msg)
+                    
+                    si no mensaje:
+                        imprimir(f"❌ No se encontró el mensaje ID {msg_id} en Telegrama.")
+                        continuar
 
-                nuevo_enlace = resubir_a_gofile(temp_path)
+                    temp_path = f"temp_{juego['id']}.rar"
+                    imprimir(f"Descargando de Telegram...")
+                    cliente.descargar_media(mensaje, archivo=temp_path)
 
-                if os.path.exists(temp_path):
-                    os.remove(temp_path)
+                    imprimir("Subiendo un GoFile...")
+                    nuevo_enlace = resubir_a_gofile(temp_ruta)
 
-                if nuevo_enlace:
-                    juego['enlace_descarga'] = nuevo_enlace
-                    cambios = True
+                    si os.camino.existe(temp_ruta):
+                        os.eliminar(temp_ruta)
 
-    if cambios:
-        with open('juegos.json', 'w', encoding='utf-8') as f:
-            json.dump(juegos, f, indent=2, ensure_ascii=False)
+                    si nuevo_enlace:
+                        imprimir(f"✅ Nuevo enlace generado: {nuevo_enlace}")
+                        juego['enlace_descarga'] = nuevo_enlace
+                        cambios = Verdadero
+                    else:
+                        imprimir("❌ Falló la resubida a GoFile.")
 
-if __name__ == '__main__':
-    main()
+                excepto Excepción como e:
+                    imprimir(f"Error procesando {juego['título']}: {e}")
+
+    si cambios:
+        con abierto('juegos.json', 'w', codificación='utf-8') como f:
+            json.volcar(juegos, f, sangría=2, asegurar_ascii=Falso)
+        imprimir("💾 juegos.json actualizado correctamente.")
+    else:
+        imprimir("✨ Todos los enlaces están funcionando correctamente.")
+
+si __nombre__ == '__principal__':
+    principal()
