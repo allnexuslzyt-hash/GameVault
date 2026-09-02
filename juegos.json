@@ -1,12 +1,12 @@
 [
   {
-    "id": "juego_01",
-    "titulo": "Nombre del Juego",
-    "imagen": "https://via.placeholder.com/300x400",
-    "requisitos": "8 GB RAM, GTX 1060",
+    "id": "cloverpit",
+    "titulo": "CloverPit",
+    "imagen": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/3314790/header.jpg",
+    "requisitos": "Intel Core i3, 1 GB RAM, Windows 10",
     "clave": "tuweb.com",
-    "telegram_channel_id": "-100XXXXXXXXXX",
-    "telegram_message_id": 2,
-    "enlace_descarga": "https://gofile.io/d/EJEMPLO"
+    "telegram_channel_id": "-1004381947395",
+    "telegram_message_id": 3,
+    "enlace_descarga": "https://gofile.io/d/f74e4e1a-28d5-4378-8918-8081d3186723"
   }
 ]
