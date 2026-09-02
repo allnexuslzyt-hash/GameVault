@@ -1,40 +1,2460 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catálogo de Juegos</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexus Games - Game Vault | Catálogo Gamer PC</title>
+  <meta name="description" content="Plataforma gamer y ciberpunk de catálogo de videojuegos para PC con descargas directas, claves y requisitos de sistema." />
+  <meta property="og:title" content="Nexus Games - Game Vault" />
+  <meta property="og:description" content="Plataforma gamer y ciberpunk de catálogo de videojuegos para PC con descargas directas, claves y requisitos de sistema." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- Google Fonts: Orbitron (Títulos Cyberpunk), Rajdhani (Subtítulos/Specs), Poppins (Lectura) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Poppins:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- FontAwesome Icons por CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
   <style>
-    body { font-family: Arial, sans-serif; background: #121212; color: #fff; margin: 0; padding: 20px; }
-    h1 { text-align: center; color: #00ff88; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; max-width: 1200px; margin: 20px auto; }
-    .card { background: #1e1e1e; border-radius: 10px; padding: 15px; text-align: center; border: 1px solid #333; }
-    .card img { width: 100%; height: 250px; object-fit: cover; border-radius: 8px; }
-    .btn { display: inline-block; background: #00ff88; color: #000; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px; margin-top: 10px; }
-    .pass-note { font-size: 0.8em; color: #ffcc00; margin-top: 8px; }
+    /* ==========================================================================
+       1. VARIABLES CSS & RESETEO GENERAL (ESTÉTICA GAMER / CYBERPUNK)
+       ========================================================================== */
+    :root {
+      /* Paleta de colores solicitada */
+      --bg-dark: #08090c;
+      --bg-surface: #0d0f14;
+      --bg-card: #141824;
+      --bg-card-hover: #192033;
+      --border-card: rgba(42, 50, 75, 0.7);
+      --border-card-hover: rgba(0, 240, 255, 0.5);
+
+      /* Neón y Acentos */
+      --neon-cyan: #00f0ff;
+      --neon-green: #00ff88;
+      --neon-purple: #7000ff;
+      --neon-pink: #ff0055;
+      --neon-yellow: #ffe600;
+
+      /* Textos */
+      --text-white: #ffffff;
+      --text-silver: #a0a8c0;
+      --text-muted: #5e6884;
+
+      /* Tipografías */
+      --font-display: 'Orbitron', -apple-system, sans-serif;
+      --font-spec: 'Rajdhani', -apple-system, sans-serif;
+      --font-body: 'Poppins', -apple-system, sans-serif;
+
+      /* Resplandores y Sombras */
+      --glow-cyan: 0 0 16px rgba(0, 240, 255, 0.45);
+      --glow-cyan-sm: 0 0 8px rgba(0, 240, 255, 0.35);
+      --glow-purple: 0 0 18px rgba(112, 0, 255, 0.45);
+      --glow-green: 0 0 14px rgba(0, 255, 136, 0.4);
+      --glow-yellow: 0 0 12px rgba(255, 230, 0, 0.4);
+
+      /* Dimensiones y Transiciones */
+      --transition-fast: 0.2s ease;
+      --transition-base: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+    }
+
+    /* Reseteo */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      color-scheme: dark;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(0, 240, 255, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 20%, rgba(112, 0, 255, 0.09) 0%, transparent 45%),
+        radial-gradient(circle at 50% 80%, rgba(255, 0, 85, 0.05) 0%, transparent 50%),
+        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+      color: var(--text-white);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Scrollbar personalizada Cyberpunk */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #06070a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1f273d;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 240, 255, 0.2);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--neon-cyan);
+      box-shadow: var(--glow-cyan);
+    }
+
+    /* ==========================================================================
+       2. UTILIDADES Y EFECTOS VISUALES
+       ========================================================================== */
+    .container {
+      width: 100%;
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .neon-text-cyan {
+      color: var(--neon-cyan);
+      text-shadow: var(--glow-cyan-sm);
+    }
+
+    .neon-text-purple {
+      color: var(--neon-purple);
+      text-shadow: var(--glow-purple);
+    }
+
+    .neon-text-green {
+      color: var(--neon-green);
+      text-shadow: var(--glow-green);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-spec);
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+    }
+
+    .badge-primary {
+      background: rgba(0, 240, 255, 0.15);
+      color: var(--neon-cyan);
+      border: 1px solid rgba(0, 240, 255, 0.4);
+    }
+
+    .badge-purple {
+      background: rgba(112, 0, 255, 0.18);
+      color: #c48eff;
+      border: 1px solid rgba(112, 0, 255, 0.5);
+    }
+
+    .badge-yellow {
+      background: rgba(255, 230, 0, 0.15);
+      color: var(--neon-yellow);
+      border: 1px solid rgba(255, 230, 0, 0.4);
+    }
+
+    .badge-green {
+      background: rgba(0, 255, 136, 0.15);
+      color: var(--neon-green);
+      border: 1px solid rgba(0, 255, 136, 0.4);
+    }
+
+    /* ==========================================================================
+       3. HEADER Y NAVBAR
+       ========================================================================== */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(8, 9, 12, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(42, 50, 75, 0.6);
+      transition: var(--transition-base);
+    }
+
+    .navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 0;
+      flex-wrap: wrap;
+    }
+
+    /* Brand Logo */
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-white);
+    }
+
+    .brand-icon-box {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(112, 0, 255, 0.3));
+      border: 1px solid var(--neon-cyan);
+      border-radius: var(--radius-md);
+      box-shadow: var(--glow-cyan-sm);
+      font-size: 1.25rem;
+      color: var(--neon-cyan);
+      transition: var(--transition-base);
+    }
+
+    .brand-logo:hover .brand-icon-box {
+      transform: scale(1.05) rotate(5deg);
+      box-shadow: var(--glow-cyan);
+    }
+
+    .brand-text-wrapper {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-title {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      line-height: 1.1;
+    }
+
+    .brand-title span {
+      color: var(--neon-cyan);
+      text-shadow: var(--glow-cyan-sm);
+    }
+
+    .brand-tagline {
+      font-family: var(--font-spec);
+      font-size: 0.72rem;
+      color: var(--text-silver);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    /* Server Status Pulse */
+    .server-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(20, 24, 36, 0.75);
+      border: 1px solid rgba(0, 255, 136, 0.3);
+      border-radius: 20px;
+      font-family: var(--font-spec);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-silver);
+      letter-spacing: 0.5px;
+    }
+
+    .pulse-dot {
+      width: 9px;
+      height: 9px;
+      background-color: var(--neon-green);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--neon-green);
+      position: relative;
+    }
+
+    .pulse-dot::after {
+      content: '';
+      position: absolute;
+      top: -3px;
+      left: -3px;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      border: 2px solid var(--neon-green);
+      animation: pulseAnimation 2s infinite ease-out;
+      opacity: 0.8;
+    }
+
+    @keyframes pulseAnimation {
+      0% { transform: scale(0.6); opacity: 1; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+
+    /* Search Bar in Header */
+    .header-search {
+      flex: 1;
+      max-width: 440px;
+      position: relative;
+    }
+
+    .search-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      color: var(--neon-cyan);
+      font-size: 0.95rem;
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      background: rgba(20, 24, 36, 0.8);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 10px 40px 10px 42px;
+      color: var(--text-white);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      transition: var(--transition-base);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--neon-cyan);
+      box-shadow: var(--glow-cyan-sm);
+      background: rgba(20, 24, 36, 0.95);
+    }
+
+    .search-clear-btn {
+      position: absolute;
+      right: 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: none;
+      transition: var(--transition-fast);
+    }
+
+    .search-clear-btn:hover {
+      color: var(--neon-cyan);
+    }
+
+    /* ==========================================================================
+       4. HERO BANNER / SECCIÓN DESTACADA
+       ========================================================================== */
+    .hero-section {
+      padding: 28px 0 16px;
+    }
+
+    .hero-card {
+      position: relative;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7), 0 0 25px rgba(0, 240, 255, 0.15);
+      background-color: var(--bg-card);
+      min-height: 380px;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .hero-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 25%;
+      filter: brightness(0.55);
+      transition: transform 0.6s ease;
+    }
+
+    .hero-card:hover .hero-bg {
+      transform: scale(1.03);
+    }
+
+    .hero-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        180deg,
+        rgba(8, 9, 12, 0.2) 0%,
+        rgba(8, 9, 12, 0.8) 60%,
+        rgba(8, 9, 12, 0.98) 100%
+      );
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      padding: 34px;
+      max-width: 820px;
+    }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 4vw, 2.7rem);
+      font-weight: 900;
+      color: var(--text-white);
+      line-height: 1.2;
+      margin-bottom: 12px;
+      text-shadow: 0 4px 15px rgba(0, 0, 0, 0.9);
+    }
+
+    .hero-desc {
+      color: var(--text-silver);
+      font-size: 0.98rem;
+      margin-bottom: 18px;
+      line-height: 1.6;
+      max-width: 680px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .hero-specs-snippet {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      font-family: var(--font-spec);
+      font-size: 0.92rem;
+      color: var(--text-silver);
+    }
+
+    .hero-specs-snippet span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hero-specs-snippet i {
+      color: var(--neon-cyan);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* Botones Neón */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 22px;
+      border-radius: var(--radius-md);
+      font-family: var(--font-spec);
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: var(--transition-base);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--neon-cyan), #00b4d8);
+      color: #06090e;
+      box-shadow: var(--glow-cyan-sm);
+      border-color: var(--neon-cyan);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #33f3ff, var(--neon-cyan));
+      box-shadow: var(--glow-cyan);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: rgba(20, 24, 36, 0.8);
+      color: var(--text-white);
+      border-color: var(--border-card);
+      backdrop-filter: blur(8px);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--neon-purple);
+      color: #c48eff;
+      box-shadow: var(--glow-purple);
+      transform: translateY(-2px);
+    }
+
+    .btn-outline-cyan {
+      background: rgba(0, 240, 255, 0.08);
+      color: var(--neon-cyan);
+      border-color: rgba(0, 240, 255, 0.4);
+    }
+
+    .btn-outline-cyan:hover {
+      background: rgba(0, 240, 255, 0.2);
+      border-color: var(--neon-cyan);
+      box-shadow: var(--glow-cyan-sm);
+      transform: translateY(-2px);
+    }
+
+    /* ==========================================================================
+       5. CONTROLES, CATEGORÍAS Y ORDENACIÓN
+       ========================================================================== */
+    .controls-section {
+      padding: 24px 0 16px;
+    }
+
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: rgba(20, 24, 36, 0.5);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-lg);
+      padding: 14px 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    /* Categorías Rápidas */
+    .categories-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .category-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 16px;
+      border-radius: var(--radius-sm);
+      background: rgba(13, 15, 20, 0.8);
+      border: 1px solid rgba(42, 50, 75, 0.8);
+      color: var(--text-silver);
+      font-family: var(--font-spec);
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: var(--transition-base);
+    }
+
+    .category-btn i {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      transition: var(--transition-fast);
+    }
+
+    .category-btn:hover {
+      color: var(--neon-cyan);
+      border-color: rgba(0, 240, 255, 0.4);
+      background: rgba(0, 240, 255, 0.05);
+    }
+
+    .category-btn.active {
+      background: rgba(0, 240, 255, 0.15);
+      color: var(--neon-cyan);
+      border-color: var(--neon-cyan);
+      box-shadow: var(--glow-cyan-sm);
+    }
+
+    .category-btn.active i {
+      color: var(--neon-cyan);
+    }
+
+    /* Selector de Ordenación e Info */
+    .sort-and-stats {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-left: auto;
+    }
+
+    .results-count {
+      font-family: var(--font-spec);
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .results-count strong {
+      color: var(--neon-cyan);
+    }
+
+    .sort-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sort-label {
+      font-family: var(--font-spec);
+      font-size: 0.85rem;
+      color: var(--text-silver);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .sort-select {
+      background: rgba(13, 15, 20, 0.9);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-sm);
+      color: var(--text-white);
+      padding: 7px 12px;
+      font-family: var(--font-spec);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+      transition: var(--transition-base);
+    }
+
+    .sort-select:focus {
+      border-color: var(--neon-cyan);
+      box-shadow: var(--glow-cyan-sm);
+    }
+
+    /* ==========================================================================
+       6. GRID DE JUEGOS Y TARJETAS
+       ========================================================================== */
+    .catalog-section {
+      padding: 16px 0 60px;
+      flex: 1;
+    }
+
+    .games-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+      margin-top: 10px;
+    }
+
+    @media (min-width: 640px) {
+      .games-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .games-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (min-width: 1280px) {
+      .games-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 28px;
+      }
+    }
+
+    /* Tarjeta de Juego */
+    .game-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: var(--transition-base);
+      position: relative;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .game-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--border-card-hover);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 240, 255, 0.2);
+    }
+
+    /* Portada Imagen */
+    .card-media {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: #0d111c;
+      cursor: pointer;
+    }
+
+    .card-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      transition: transform 0.5s ease;
+    }
+
+    .game-card:hover .card-img {
+      transform: scale(1.06);
+    }
+
+    .card-media-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, rgba(20, 24, 36, 0.95) 100%);
+      pointer-events: none;
+    }
+
+    /* Badges flotantes */
+    .card-floating-badges {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .card-size-chip {
+      background: rgba(8, 9, 12, 0.75);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-family: var(--font-spec);
+      font-size: 0.75rem;
+      color: var(--text-silver);
+      font-weight: 600;
+    }
+
+    /* Cuerpo de la tarjeta */
+    .card-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 1.18rem;
+      font-weight: 700;
+      color: var(--text-white);
+      line-height: 1.3;
+      margin-bottom: 12px;
+      transition: var(--transition-fast);
+      cursor: pointer;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-title:hover {
+      color: var(--neon-cyan);
+      text-shadow: var(--glow-cyan-sm);
+    }
+
+    /* Bloque Requisitos */
+    .card-requirements {
+      background: rgba(13, 15, 20, 0.65);
+      border: 1px solid rgba(42, 50, 75, 0.5);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      margin-bottom: 14px;
+    }
+
+    .req-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-spec);
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .req-header i {
+      color: var(--neon-cyan);
+    }
+
+    .req-text {
+      font-family: var(--font-spec);
+      font-size: 0.88rem;
+      color: var(--text-silver);
+      line-height: 1.4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Bloque Clave WinRAR */
+    .card-password-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: rgba(255, 230, 0, 0.06);
+      border: 1px dashed rgba(255, 230, 0, 0.35);
+      border-radius: var(--radius-md);
+      padding: 8px 12px;
+      margin-bottom: 16px;
+      transition: var(--transition-base);
+      cursor: pointer;
+    }
+
+    .card-password-box:hover {
+      background: rgba(255, 230, 0, 0.12);
+      border-color: var(--neon-yellow);
+      box-shadow: var(--glow-yellow);
+    }
+
+    .pwd-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .pwd-icon {
+      color: var(--neon-yellow);
+      font-size: 0.9rem;
+    }
+
+    .pwd-label {
+      font-family: var(--font-spec);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .pwd-value {
+      font-family: monospace;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--neon-yellow);
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .copy-icon-btn {
+      background: transparent;
+      border: none;
+      color: var(--neon-yellow);
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-spec);
+      font-weight: 700;
+    }
+
+    /* Botones de Acción de Tarjeta */
+    .card-actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .card-btn-download {
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(0, 240, 255, 0.05));
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      padding: 9px 14px;
+      font-size: 0.9rem;
+      box-shadow: var(--glow-cyan-sm);
+    }
+
+    .card-btn-download:hover {
+      background: var(--neon-cyan);
+      color: #06090e;
+      box-shadow: var(--glow-cyan);
+    }
+
+    .card-btn-details {
+      padding: 9px 14px;
+      background: rgba(20, 24, 36, 0.8);
+      border: 1px solid var(--border-card);
+      color: var(--text-silver);
+      font-size: 0.9rem;
+    }
+
+    .card-btn-details:hover {
+      border-color: var(--neon-purple);
+      color: #c48eff;
+      box-shadow: var(--glow-purple);
+    }
+
+    /* ==========================================================================
+       7. ESTADOS: SKELETON / CARGANDO / ERROR / VACÍO
+       ========================================================================== */
+    .skeleton-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 420px;
+    }
+
+    .skeleton-shimmer {
+      background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.03) 0%,
+        rgba(255, 255, 255, 0.08) 50%,
+        rgba(255, 255, 255, 0.03) 100%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.8s infinite linear;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    .skeleton-img {
+      width: 100%;
+      height: 190px;
+    }
+
+    .skeleton-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      flex: 1;
+    }
+
+    .skeleton-line {
+      height: 18px;
+      border-radius: 4px;
+    }
+
+    .skeleton-box {
+      height: 48px;
+      border-radius: var(--radius-md);
+    }
+
+    /* Mensaje Vacío / Error */
+    .feedback-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      background: rgba(20, 24, 36, 0.4);
+      border: 1px dashed var(--border-card);
+      border-radius: var(--radius-lg);
+      margin: 20px 0;
+    }
+
+    .feedback-icon {
+      font-size: 3.2rem;
+      margin-bottom: 16px;
+    }
+
+    .feedback-title {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+    }
+
+    .feedback-text {
+      color: var(--text-silver);
+      max-width: 480px;
+      margin: 0 auto 20px;
+    }
+
+    /* ==========================================================================
+       8. MODAL DE DETALLES EXPANSIBLE
+       ========================================================================== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background: rgba(6, 7, 10, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--neon-cyan);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), var(--glow-cyan);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 820px;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      transform: scale(0.92) translateY(15px);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .modal-overlay.active .modal-container {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 10;
+      width: 38px;
+      height: 38px;
+      background: rgba(8, 9, 12, 0.8);
+      border: 1px solid var(--border-card);
+      border-radius: 50%;
+      color: var(--text-white);
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition-base);
+    }
+
+    .modal-close-btn:hover {
+      background: var(--neon-pink);
+      border-color: var(--neon-pink);
+      color: #fff;
+      transform: rotate(90deg);
+    }
+
+    .modal-header-banner {
+      position: relative;
+      height: 250px;
+      overflow: hidden;
+      background: #0e121e;
+    }
+
+    .modal-header-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .modal-header-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(8, 9, 12, 0.2) 0%, var(--bg-surface) 100%);
+    }
+
+    .modal-header-title-box {
+      position: absolute;
+      bottom: 20px;
+      left: 24px;
+      right: 24px;
+    }
+
+    .modal-game-title {
+      font-family: var(--font-display);
+      font-size: 1.7rem;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+      margin-top: 8px;
+    }
+
+    .modal-content {
+      padding: 24px 28px;
+    }
+
+    .modal-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .modal-meta-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .meta-label {
+      font-family: var(--font-spec);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .meta-val {
+      font-family: var(--font-spec);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-white);
+    }
+
+    .modal-section-title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      color: var(--neon-cyan);
+      margin: 22px 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .modal-synopsis {
+      color: var(--text-silver);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    /* Guía de Instalación Paso a Paso */
+    .install-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .install-step-item {
+      display: flex;
+      gap: 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      align-items: flex-start;
+    }
+
+    .step-number {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(0, 240, 255, 0.15);
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .step-text {
+      color: var(--text-silver);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .step-text strong {
+      color: var(--text-white);
+    }
+
+    /* Clave en el modal */
+    .modal-key-banner {
+      background: rgba(255, 230, 0, 0.08);
+      border: 1px solid rgba(255, 230, 0, 0.4);
+      border-radius: var(--radius-md);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 22px 0;
+      flex-wrap: wrap;
+    }
+
+    .modal-key-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .modal-key-icon {
+      font-size: 1.5rem;
+      color: var(--neon-yellow);
+    }
+
+    .modal-key-value {
+      font-family: monospace;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--neon-yellow);
+      letter-spacing: 1px;
+    }
+
+    /* Botones de acción modal */
+    .modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 26px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-card);
+    }
+
+    /* ==========================================================================
+       9. NOTIFICACIÓN TOAST FLOTANTE
+       ========================================================================== */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      pointer-events: auto;
+      background: rgba(13, 15, 20, 0.95);
+      border: 1px solid var(--neon-cyan);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), var(--glow-cyan-sm);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 280px;
+      transform: translateX(120%);
+      opacity: 0;
+      transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2), opacity 0.35s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .toast.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    .toast-icon {
+      font-size: 1.2rem;
+      color: var(--neon-cyan);
+    }
+
+    .toast-content {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toast-title {
+      font-family: var(--font-spec);
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text-white);
+    }
+
+    .toast-desc {
+      font-size: 0.8rem;
+      color: var(--text-silver);
+    }
+
+    .toast-progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      width: 100%;
+      background: var(--neon-cyan);
+      animation: progressCountdown 3s linear forwards;
+    }
+
+    @keyframes progressCountdown {
+      from { width: 100%; }
+      to { width: 0%; }
+    }
+
+    /* ==========================================================================
+       10. FOOTER
+       ========================================================================== */
+    .site-footer {
+      background: #050608;
+      border-top: 1px solid var(--border-card);
+      padding: 48px 0 24px;
+      margin-top: auto;
+      position: relative;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+      margin-bottom: 36px;
+    }
+
+    @media (min-width: 768px) {
+      .footer-grid {
+        grid-template-columns: 2fr 1fr 1fr;
+      }
+    }
+
+    .footer-col-desc {
+      color: var(--text-silver);
+      font-size: 0.88rem;
+      line-height: 1.6;
+      margin-top: 12px;
+      max-width: 440px;
+    }
+
+    .footer-heading {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      color: var(--text-white);
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+    }
+
+    .footer-social-links {
+      display: flex;
+      gap: 12px;
+    }
+
+    .social-btn {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      color: var(--text-silver);
+      font-size: 1.1rem;
+      text-decoration: none;
+      transition: var(--transition-base);
+    }
+
+    .social-btn:hover {
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan);
+      box-shadow: var(--glow-cyan-sm);
+      transform: translateY(-3px);
+    }
+
+    .footer-dmca-box {
+      background: rgba(20, 24, 36, 0.4);
+      border: 1px solid rgba(42, 50, 75, 0.5);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(42, 50, 75, 0.4);
+      padding-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      font-family: var(--font-spec);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Fallback image data uri para imágenes rotas */
+    .img-fallback-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      background: #111420;
+      color: var(--neon-cyan);
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      text-align: center;
+      padding: 10px;
+    }
+
+    .img-fallback-wrap i {
+      font-size: 2rem;
+      margin-bottom: 6px;
+      opacity: 0.7;
+    }
+
+    /* Responsive Tweaks */
+    @media (max-width: 768px) {
+      .navbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .brand-logo {
+        justify-content: space-between;
+      }
+      .header-search {
+        max-width: 100%;
+      }
+      .hero-content {
+        padding: 22px 18px;
+      }
+      .sort-and-stats {
+        margin-left: 0;
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>🎮 Descarga de Juegos</h1>
-  <div class="grid" id="contenedor-juegos"><p>Cargando catálogo...</p></div>
+
+  <!-- ========================================================================
+       1. HEADER & NAVBAR
+       ======================================================================== -->
+  <header class="site-header" id="siteHeader">
+    <div class="container">
+      <nav class="navbar" aria-label="Navegación principal">
+        
+        <!-- Logo de la Plataforma -->
+        <a href="#" class="brand-logo" id="brandLogo" title="Nexus Games - Game Vault">
+          <div class="brand-icon-box">
+            <i class="fa-solid fa-gamepad"></i>
+          </div>
+          <div class="brand-text-wrapper">
+            <h1 class="brand-title">NEXUS<span>GAMES</span></h1>
+            <span class="brand-tagline">Game Vault • Cyber Platform</span>
+          </div>
+        </a>
+
+        <!-- Indicador de Sistema de Enlaces en Vivo -->
+        <div class="server-status" id="serverStatus" title="Estado de conectividad y servidores de descarga">
+          <div class="pulse-dot"></div>
+          <span>Sistema de Enlaces Activo</span>
+        </div>
+
+        <!-- Buscador en Vivo en Tiempo Real -->
+        <div class="header-search">
+          <div class="search-input-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input 
+              type="text" 
+              class="search-input" 
+              id="searchInput" 
+              placeholder="Buscar juegos por título o requisitos..." 
+              autocomplete="off"
+              aria-label="Buscar juegos"
+            />
+            <button class="search-clear-btn" id="searchClearBtn" title="Limpiar búsqueda">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+
+      </nav>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       2. HERO BANNER / SECCIÓN DESTACADA (DINÁMICO)
+       ======================================================================== -->
+  <section class="hero-section" id="heroSection">
+    <div class="container">
+      <div class="hero-card" id="heroCard">
+        <img src="" alt="Juego Destacado" class="hero-bg" id="heroBgImg" />
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <div class="hero-badges">
+            <span class="badge badge-primary"><i class="fa-solid fa-bolt"></i> Destacado de la Semana</span>
+            <span class="badge badge-green" id="heroTag"><i class="fa-solid fa-circle-check"></i> PC Completo</span>
+            <span class="badge badge-purple" id="heroCategory">Indies</span>
+          </div>
+          <h2 class="hero-title" id="heroTitle">Cargando Bóveda de Juegos...</h2>
+          <p class="hero-desc" id="heroDesc">
+            Explora el catálogo definitivo de títulos para PC, listos para descargar con máxima velocidad y claves de extracción verificadas.
+          </p>
+          <div class="hero-specs-snippet" id="heroSpecsSnippet">
+            <span><i class="fa-solid fa-microchip"></i> <strong id="heroCpu">Requisitos:</strong> <span id="heroSpecsText">Cargando especificaciones...</span></span>
+          </div>
+          <div class="hero-actions">
+            <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary" id="heroDownloadBtn">
+              <i class="fa-solid fa-download"></i> Descarga Directa
+            </a>
+            <button type="button" class="btn btn-secondary" id="heroDetailsBtn">
+              <i class="fa-solid fa-circle-info"></i> Ver Detalles
+            </button>
+            <button type="button" class="btn btn-outline-cyan" id="heroCopyKeyBtn">
+              <i class="fa-solid fa-key"></i> Copiar Clave: <span id="heroKeyLabel" style="font-family:monospace; margin-left:4px;">...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       3. CONTROLES Y FILTROS RÁPIDOS
+       ======================================================================== -->
+  <section class="controls-section" id="controlsSection">
+    <div class="container">
+      <div class="controls-bar">
+        
+        <!-- Botones de Categorías -->
+        <div class="categories-list" id="categoriesList" role="group" aria-label="Filtros de categoría">
+          <button class="category-btn active" data-cat="all">
+            <i class="fa-solid fa-border-all"></i> Todos
+          </button>
+          <button class="category-btn" data-cat="Acción">
+            <i class="fa-solid fa-crosshairs"></i> Acción
+          </button>
+          <button class="category-btn" data-cat="Aventura">
+            <i class="fa-solid fa-compass"></i> Aventura
+          </button>
+          <button class="category-btn" data-cat="Terror">
+            <i class="fa-solid fa-ghost"></i> Terror
+          </button>
+          <button class="category-btn" data-cat="Indies">
+            <i class="fa-solid fa-cube"></i> Indies
+          </button>
+          <button class="category-btn" data-cat="RPG">
+            <i class="fa-solid fa-dragon"></i> RPG
+          </button>
+        </div>
+
+        <!-- Ordenación y Conteo de Resultados -->
+        <div class="sort-and-stats">
+          <div class="results-count" id="resultsCount">
+            Mostrando <strong id="countCurrent">0</strong> de <span id="countTotal">0</span> títulos
+          </div>
+          <div class="sort-wrapper">
+            <label for="sortSelect" class="sort-label"><i class="fa-solid fa-arrow-down-short-wide"></i> Orden:</label>
+            <select id="sortSelect" class="sort-select">
+              <option value="recent">Más recientes</option>
+              <option value="az">Nombre (A - Z)</option>
+              <option value="za">Nombre (Z - A)</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       4. CATÁLOGO DE JUEGOS (GRID PRINCIPAL)
+       ======================================================================== -->
+  <main class="catalog-section" id="catalogSection">
+    <div class="container">
+      <div class="games-grid" id="gamesGrid" aria-live="polite">
+        <!-- El contenido se inyecta dinámicamente o muestra skeleton screens -->
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       5. MODAL DE DETALLES EXPANSIBLE
+       ======================================================================== -->
+  <div class="modal-overlay" id="detailsModal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-container" id="modalContainer">
+      
+      <!-- Botón Cerrar Modal -->
+      <button class="modal-close-btn" id="modalCloseBtn" aria-label="Cerrar ventana emergente">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <!-- Portada Gigante / Header -->
+      <div class="modal-header-banner">
+        <img src="" alt="" class="modal-header-img" id="modalHeaderImg" />
+        <div class="modal-header-gradient"></div>
+        <div class="modal-header-title-box">
+          <div class="hero-badges" style="margin-bottom:6px;">
+            <span class="badge badge-primary" id="modalBadge">PC GAME</span>
+            <span class="badge badge-purple" id="modalCategory">Acción</span>
+          </div>
+          <h2 class="modal-game-title" id="modalGameTitle">Título del Juego</h2>
+        </div>
+      </div>
+
+      <!-- Contenido Expandido del Juego -->
+      <div class="modal-content">
+        
+        <!-- Ficha Técnica Resumida -->
+        <div class="modal-meta-grid">
+          <div class="modal-meta-item">
+            <span class="meta-label"><i class="fa-solid fa-floppy-disk"></i> Tamaño Aprox.</span>
+            <span class="meta-val" id="modalSize">Desconocido</span>
+          </div>
+          <div class="modal-meta-item">
+            <span class="meta-label"><i class="fa-solid fa-calendar-day"></i> Actualización</span>
+            <span class="meta-val" id="modalDate">Reciente</span>
+          </div>
+          <div class="modal-meta-item">
+            <span class="meta-label"><i class="fa-brands fa-windows"></i> Plataforma</span>
+            <span class="meta-val">Windows PC</span>
+          </div>
+          <div class="modal-meta-item">
+            <span class="meta-label"><i class="fa-solid fa-shield-virus"></i> Seguridad</span>
+            <span class="meta-val neon-text-green">Verificado Limpio</span>
+          </div>
+        </div>
+
+        <!-- Sinopsis -->
+        <h3 class="modal-section-title"><i class="fa-solid fa-align-left"></i> Sinopsis del Videojuego</h3>
+        <p class="modal-synopsis" id="modalSynopsis">
+          Sinopsis detallada del juego.
+        </p>
+
+        <!-- Requisitos del Sistema Detallados -->
+        <h3 class="modal-section-title"><i class="fa-solid fa-microchip"></i> Requisitos de Sistema Recomendados</h3>
+        <div class="card-requirements" style="margin-bottom: 20px;">
+          <div class="req-text" id="modalRequirements" style="white-space:normal; font-size:0.95rem;">
+            Intel Core i5 / AMD Ryzen, 8 GB RAM, Gráfica dedicada de 4GB, Windows 10/11 64-bit.
+          </div>
+        </div>
+
+        <!-- Banner Clave WinRAR con Copia Rápida -->
+        <div class="modal-key-banner" id="modalKeyBanner">
+          <div class="modal-key-info">
+            <i class="fa-solid fa-key modal-key-icon"></i>
+            <div>
+              <div style="font-family:var(--font-spec); font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; font-weight:700;">
+                Clave de Descompresión WinRAR
+              </div>
+              <div class="modal-key-value" id="modalKeyValue">tuweb.com</div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-outline-cyan" id="modalCopyKeyBtn">
+            <i class="fa-solid fa-copy"></i> Copiar Clave
+          </button>
+        </div>
+
+        <!-- Instrucciones Paso a Paso de Instalación -->
+        <h3 class="modal-section-title"><i class="fa-solid fa-list-check"></i> Instrucciones de Instalación</h3>
+        <div class="install-steps">
+          <div class="install-step-item">
+            <div class="step-number">1</div>
+            <div class="step-text">
+              <strong>Descarga el archivo:</strong> Haz clic en el botón de Descarga Directa para obtener el archivo o partes comprimidas del juego.
+            </div>
+          </div>
+          <div class="install-step-item">
+            <div class="step-number">2</div>
+            <div class="step-text">
+              <strong>Extraer con WinRAR / 7-Zip:</strong> Haz clic derecho en el archivo descargado (o parte 1), pulsa <em>"Extraer aquí"</em> e introduce la clave: <strong class="neon-text-cyan" id="modalStepKey">clave</strong>.
+            </div>
+          </div>
+          <div class="install-step-item">
+            <div class="step-number">3</div>
+            <div class="step-text">
+              <strong>Montar o Ejecutar:</strong> Abre la carpeta extraída, ejecuta el archivo <code>setup.exe</code> como Administrador y selecciona el directorio de instalación.
+            </div>
+          </div>
+          <div class="install-step-item">
+            <div class="step-number">4</div>
+            <div class="step-text">
+              <strong>¡Listo para jugar!:</strong> Disfruta de la experiencia completa en PC. (Recomendado desactivar temporalmente el antivirus durante la instalación para evitar falsos positivos).
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones del Modal: Descarga y Telegram si existe -->
+        <div class="modal-actions">
+          <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary" id="modalDownloadBtn" style="flex:1;">
+            <i class="fa-solid fa-download"></i> Iniciar Descarga Directa
+          </a>
+          <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" id="modalTelegramBtn" style="display:none;">
+            <i class="fa-brands fa-telegram"></i> Canal de Telegram
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       6. SISTEMA DE NOTIFICACIONES TOAST FLOTANTE
+       ======================================================================== -->
+  <div class="toast-container" id="toastContainer" aria-live="assertive"></div>
+
+  <!-- ========================================================================
+       7. FOOTER
+       ======================================================================== -->
+  <footer class="site-footer" id="siteFooter">
+    <div class="container">
+      <div class="footer-grid">
+        
+        <div>
+          <a href="#" class="brand-logo" style="margin-bottom: 8px;">
+            <div class="brand-icon-box" style="width:36px; height:36px; font-size:1rem;">
+              <i class="fa-solid fa-gamepad"></i>
+            </div>
+            <div class="brand-text-wrapper">
+              <span class="brand-title" style="font-size:1.15rem;">NEXUS<span>GAMES</span></span>
+            </div>
+          </a>
+          <p class="footer-col-desc">
+            Plataforma de preservación y catálogo de videojuegos para PC. Construida para gamers exigentes con estética ciberpunk, enlaces verificados y compatibilidad de hardware.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="footer-heading"><i class="fa-solid fa-satellite-dish"></i> Comunidad & Soporte</h4>
+          <div class="footer-social-links">
+            <a href="https://discord.com" target="_blank" rel="noopener noreferrer" class="social-btn" title="Servidor de Discord">
+              <i class="fa-brands fa-discord"></i>
+            </a>
+            <a href="https://t.me" target="_blank" rel="noopener noreferrer" class="social-btn" title="Canal de Telegram">
+              <i class="fa-brands fa-telegram"></i>
+            </a>
+            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" class="social-btn" title="Canal de YouTube">
+              <i class="fa-brands fa-youtube"></i>
+            </a>
+            <a href="https://x.com" target="_blank" rel="noopener noreferrer" class="social-btn" title="Twitter / X">
+              <i class="fa-brands fa-x-twitter"></i>
+            </a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-heading"><i class="fa-solid fa-shield-halved"></i> Aviso Legal / DMCA</h4>
+          <div class="footer-dmca-box">
+            Este portal no aloja ningún archivo ejecutable ni ISO en servidores propios. Todos los enlaces son referencias a servidores de almacenamiento externos e independientes (Gofile, Mega, Mediafire) con fines educativos.
+          </div>
+        </div>
+
+      </div>
+
+      <div class="footer-bottom">
+        <div>
+          &copy; <span id="currentYear">2026</span> <strong>Nexus Games Vault</strong>. Todos los derechos reservados.
+        </div>
+        <div style="display:flex; align-items:center; gap:16px;">
+          <span><i class="fa-solid fa-circle-check neon-text-green"></i> TLS 1.3 Seguro</span>
+          <span>v3.4.0 CyberCore</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================
+       8. JAVASCRIPT ES6+ PURO VANILLA (CONSUMO DINÁMICO DE juegos.json)
+       ======================================================================== -->
   <script>
-    fetch('juegos.json')
-      .then(res => res.json())
-      .then(data => {
-        const container = document.getElementById('contenedor-juegos');
-        container.innerHTML = '';
-        data.forEach(juego => {
-          container.innerHTML += `
-            <div class="card">
-              <img src="${juego.imagen}" alt="${juego.titulo}">
-              <h3>${juego.titulo}</h3>
-              <p><strong>Requisitos:</strong> ${juego.requisitos}</p>
-              <a href="${juego.enlace_descarga}" target="_blank" class="btn">DESCARGAR</a>
-              <div class="pass-note">Clave WinRAR: ${juego.clave}</div>
+    /**
+     * Nexus Games Vault - Motor Frontend Vanilla
+     * Desarrollado con ES6+ Asíncrono, Reactividad de Estado, y Filtrado en Tiempo Real.
+     */
+    (function () {
+      'use strict';
+
+      // --------------------------------------------------------------------------
+      // ESTADO GLOBAL DE LA APLICACIÓN
+      // --------------------------------------------------------------------------
+      const state = {
+        allGames: [],
+        filteredGames: [],
+        featuredGame: null,
+        selectedCategory: 'all',
+        searchQuery: '',
+        sortBy: 'recent',
+        isLoading: true,
+        error: null,
+      };
+
+      // --------------------------------------------------------------------------
+      // REFERENCIAS AL DOM
+      // --------------------------------------------------------------------------
+      const DOM = {
+        gamesGrid: document.getElementById('gamesGrid'),
+        searchInput: document.getElementById('searchInput'),
+        searchClearBtn: document.getElementById('searchClearBtn'),
+        categoriesList: document.getElementById('categoriesList'),
+        sortSelect: document.getElementById('sortSelect'),
+        countCurrent: document.getElementById('countCurrent'),
+        countTotal: document.getElementById('countTotal'),
+        toastContainer: document.getElementById('toastContainer'),
+        currentYear: document.getElementById('currentYear'),
+
+        // Hero Section
+        heroSection: document.getElementById('heroSection'),
+        heroBgImg: document.getElementById('heroBgImg'),
+        heroTitle: document.getElementById('heroTitle'),
+        heroDesc: document.getElementById('heroDesc'),
+        heroCategory: document.getElementById('heroCategory'),
+        heroTag: document.getElementById('heroTag'),
+        heroSpecsText: document.getElementById('heroSpecsText'),
+        heroDownloadBtn: document.getElementById('heroDownloadBtn'),
+        heroDetailsBtn: document.getElementById('heroDetailsBtn'),
+        heroCopyKeyBtn: document.getElementById('heroCopyKeyBtn'),
+        heroKeyLabel: document.getElementById('heroKeyLabel'),
+
+        // Modal
+        detailsModal: document.getElementById('detailsModal'),
+        modalContainer: document.getElementById('modalContainer'),
+        modalCloseBtn: document.getElementById('modalCloseBtn'),
+        modalHeaderImg: document.getElementById('modalHeaderImg'),
+        modalGameTitle: document.getElementById('modalGameTitle'),
+        modalCategory: document.getElementById('modalCategory'),
+        modalBadge: document.getElementById('modalBadge'),
+        modalSize: document.getElementById('modalSize'),
+        modalDate: document.getElementById('modalDate'),
+        modalSynopsis: document.getElementById('modalSynopsis'),
+        modalRequirements: document.getElementById('modalRequirements'),
+        modalKeyValue: document.getElementById('modalKeyValue'),
+        modalStepKey: document.getElementById('modalStepKey'),
+        modalCopyKeyBtn: document.getElementById('modalCopyKeyBtn'),
+        modalDownloadBtn: document.getElementById('modalDownloadBtn'),
+        modalTelegramBtn: document.getElementById('modalTelegramBtn'),
+      };
+
+      // --------------------------------------------------------------------------
+      // IMAGEN DE RESERVA ELEGANTE (SVG DATA URI PARA IMÁGENES ROTAS O FALLIDAS)
+      // --------------------------------------------------------------------------
+      const DEFAULT_FALLBACK_IMAGE = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+          <defs>
+            <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#0c0e16"/>
+              <stop offset="100%" stop-color="#181d2e"/>
+            </linearGradient>
+          </defs>
+          <rect width="640" height="360" fill="url(#g)"/>
+          <circle cx="320" cy="160" r="50" fill="none" stroke="#00f0ff" stroke-width="2" stroke-dasharray="6,6"/>
+          <path d="M305 150 L335 150 M320 135 L320 165 M305 175 L335 175" stroke="#00f0ff" stroke-width="3" stroke-linecap="round"/>
+          <text x="320" y="240" fill="#a0a8c0" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="middle" letter-spacing="2">
+            IMAGEN NO DISPONIBLE
+          </text>
+          <text x="320" y="265" fill="#5e6884" font-family="sans-serif" font-size="12" text-anchor="middle">
+            NEXUS GAMES VAULT
+          </text>
+        </svg>
+      `);
+
+      // --------------------------------------------------------------------------
+      // LIMPIADOR DE URLS DEFENSIVO (POR SI CONTIENE FORMATO MARKDOWN [url](url))
+      // --------------------------------------------------------------------------
+      function sanitizeUrl(rawUrl) {
+        if (!rawUrl) return '';
+        const trimmed = String(rawUrl).trim();
+        // Si viene como [https://...](https://...)
+        const markdownMatch = trimmed.match(/\((https?:\/\/[^\s\)]+)\)/);
+        if (markdownMatch && markdownMatch[1]) {
+          return markdownMatch[1];
+        }
+        const bracketMatch = trimmed.match(/https?:\/\/[^\s\]\)]+/);
+        if (bracketMatch) {
+          return bracketMatch[0];
+        }
+        return trimmed;
+      }
+
+      // --------------------------------------------------------------------------
+      // SISTEMA DE NOTIFICACIONES TOAST NEÓN
+      // --------------------------------------------------------------------------
+      function showToast(title, message, iconClass = 'fa-solid fa-circle-check') {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `
+          <i class="${iconClass} toast-icon"></i>
+          <div class="toast-content">
+            <span class="toast-title">${title}</span>
+            <span class="toast-desc">${message}</span>
+          </div>
+          <div class="toast-progress"></div>
+        `;
+
+        DOM.toastContainer.appendChild(toast);
+
+        // Disparar animación de entrada en el siguiente tick
+        requestAnimationFrame(() => {
+          toast.classList.add('show');
+        });
+
+        // Remover automáticamente tras 3 segundos
+        setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => {
+            if (toast.parentNode) {
+              toast.parentNode.removeChild(toast);
+            }
+          }, 350);
+        }, 3000);
+      }
+
+      // --------------------------------------------------------------------------
+      // SISTEMA DE COPIADO AL PORTAPAPELES (ROBUSTO CON FALLBACK PARA IFRAMES)
+      // --------------------------------------------------------------------------
+      async function copyToClipboard(text, customMessage = '¡Clave copiada al portapapeles!') {
+        if (!text) return;
+        let copied = false;
+
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            copied = true;
+          }
+        } catch (err) {
+          copied = false;
+        }
+
+        // Fallback usando textarea
+        if (!copied) {
+          try {
+            const tempArea = document.createElement('textarea');
+            tempArea.value = text;
+            tempArea.style.position = 'fixed';
+            tempArea.style.top = '-9999px';
+            tempArea.style.left = '-9999px';
+            document.body.appendChild(tempArea);
+            tempArea.focus();
+            tempArea.select();
+            copied = document.execCommand('copy');
+            document.body.removeChild(tempArea);
+          } catch (e) {
+            copied = false;
+          }
+        }
+
+        if (copied) {
+          showToast('Clave WinRAR Copiada', `"${text}" listo para descomprimir`, 'fa-solid fa-key');
+        } else {
+          // Último recurso
+          prompt('Copia manualmente la clave WinRAR:', text);
+        }
+      }
+
+      // --------------------------------------------------------------------------
+      // SKELETON SCREEN ANIMADO DURANTE CARGA DE DATOS
+      // --------------------------------------------------------------------------
+      function renderSkeletons() {
+        let skeletonsHTML = '';
+        for (let i = 0; i < 6; i++) {
+          skeletonsHTML += `
+            <div class="skeleton-card">
+              <div class="skeleton-img skeleton-shimmer"></div>
+              <div class="skeleton-body">
+                <div class="skeleton-line skeleton-shimmer" style="width: 75%;"></div>
+                <div class="skeleton-box skeleton-shimmer"></div>
+                <div class="skeleton-line skeleton-shimmer" style="width: 90%;"></div>
+                <div class="skeleton-box skeleton-shimmer" style="height: 38px; margin-top: auto;"></div>
+              </div>
             </div>
           `;
+        }
+        DOM.gamesGrid.innerHTML = skeletonsHTML;
+      }
+
+      // --------------------------------------------------------------------------
+      // CARGA DE DATOS DESDE juegos.json
+      // --------------------------------------------------------------------------
+      async function fetchGamesData() {
+        renderSkeletons();
+        state.isLoading = true;
+        state.error = null;
+
+        try {
+          // Intentar peticiones a diferentes rutas estándar
+          let response;
+          const candidatePaths = ['juegos.json', './juegos.json', '/juegos.json'];
+
+          for (const path of candidatePaths) {
+            try {
+              response = await fetch(path, { cache: 'no-cache' });
+              if (response && response.ok) break;
+            } catch (e) {
+              // Intentar siguiente ruta
+            }
+          }
+
+          if (!response || !response.ok) {
+            throw new Error(`No se pudo cargar el archivo local 'juegos.json' (Status: ${response ? response.status : 'Offline'})`);
+          }
+
+          const rawData = await response.json();
+
+          if (!Array.isArray(rawData) || rawData.length === 0) {
+            throw new Error('El archivo juegos.json está vacío o no tiene el formato de lista esperado.');
+          }
+
+          // Normalizar y enriquecer datos
+          state.allGames = rawData.map((item, index) => {
+            const cleanImage = sanitizeUrl(item.imagen) || DEFAULT_FALLBACK_IMAGE;
+            const cleanDownload = sanitizeUrl(item.enlace_descarga) || '#';
+            const category = item.categoria || guessCategory(item.titulo, item.requisitos);
+
+            return {
+              id: item.id || `game-${index}`,
+              titulo: item.titulo || 'Juego Desconocido',
+              imagen: cleanImage,
+              requisitos: item.requisitos || 'No especificados',
+              clave: item.clave || 'nexus-games.vault',
+              telegram_channel_id: item.telegram_channel_id || '',
+              telegram_message_id: item.telegram_message_id || 0,
+              enlace_descarga: cleanDownload,
+              categoria: category,
+              etiqueta: item.etiqueta || (index === 0 ? 'DESTACADO' : 'PC GAME'),
+              destacado: Boolean(item.destacado || index === 0),
+              sinopsis: item.sinopsis || `Disfruta de ${item.titulo} en su versión completa para ordenador con todas las actualizaciones y compatibilidad con sistemas modernos.`,
+              tamano: item.tamano || 'Full Game',
+              fecha: item.fecha || '2025-02-01',
+            };
+          });
+
+          // Definir juego destacado para el Hero
+          state.featuredGame = state.allGames.find(g => g.destacado) || state.allGames[0];
+
+          state.isLoading = false;
+          updateHeroBanner();
+          applyFilters();
+
+        } catch (error) {
+          console.warn('Error al cargar juegos.json:', error);
+          state.isLoading = false;
+          state.error = error.message;
+          renderErrorState(error.message);
+        }
+      }
+
+      // Clasificador por heurística sencilla en caso de que juegos.json no defina categoria
+      function guessCategory(title, req) {
+        const text = `${title} ${req}`.toLowerCase();
+        if (text.includes('horror') || text.includes('terror') || text.includes('dead') || text.includes('silent')) return 'Terror';
+        if (text.includes('rpg') || text.includes('elden') || text.includes('ring') || text.includes('souls')) return 'RPG';
+        if (text.includes('indie') || text.includes('celeste') || text.includes('pit') || text.includes('hades')) return 'Indies';
+        if (text.includes('knight') || text.includes('adventure') || text.includes('aventura')) return 'Aventura';
+        return 'Acción';
+      }
+
+      // --------------------------------------------------------------------------
+      // RENDERIZADO DEL HERO BANNER
+      // --------------------------------------------------------------------------
+      function updateHeroBanner() {
+        const game = state.featuredGame;
+        if (!game) {
+          DOM.heroSection.style.display = 'none';
+          return;
+        }
+
+        DOM.heroSection.style.display = 'block';
+        DOM.heroBgImg.src = game.imagen;
+        DOM.heroBgImg.onerror = () => { DOM.heroBgImg.src = DEFAULT_FALLBACK_IMAGE; };
+        DOM.heroTitle.textContent = game.titulo;
+        DOM.heroDesc.textContent = game.sinopsis;
+        DOM.heroCategory.textContent = game.categoria;
+        DOM.heroTag.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${game.etiqueta}`;
+        DOM.heroSpecsText.textContent = game.requisitos;
+        DOM.heroDownloadBtn.href = game.enlace_descarga;
+        DOM.heroKeyLabel.textContent = game.clave;
+
+        // Listener para Ver Detalles desde Hero
+        DOM.heroDetailsBtn.onclick = () => openGameModal(game);
+
+        // Listener para copiar clave desde Hero
+        DOM.heroCopyKeyBtn.onclick = () => copyToClipboard(game.clave);
+      }
+
+      // --------------------------------------------------------------------------
+      // FILTROS, BÚSQUEDA Y ORDENACIÓN
+      // --------------------------------------------------------------------------
+      function applyFilters() {
+        if (state.isLoading) return;
+
+        let results = [...state.allGames];
+
+        // 1. Filtro por Categoría
+        if (state.selectedCategory !== 'all') {
+          results = results.filter(game => 
+            game.categoria.toLowerCase() === state.selectedCategory.toLowerCase()
+          );
+        }
+
+        // 2. Filtro por Búsqueda (en vivo)
+        const query = state.searchQuery.trim().toLowerCase();
+        if (query) {
+          results = results.filter(game => {
+            const titleMatch = game.titulo.toLowerCase().includes(query);
+            const reqMatch = game.requisitos.toLowerCase().includes(query);
+            const catMatch = game.categoria.toLowerCase().includes(query);
+            return titleMatch || reqMatch || catMatch;
+          });
+        }
+
+        // 3. Ordenación
+        if (state.sortBy === 'az') {
+          results.sort((a, b) => a.titulo.localeCompare(b.titulo));
+        } else if (state.sortBy === 'za') {
+          results.sort((a, b) => b.titulo.localeCompare(a.titulo));
+        } else if (state.sortBy === 'recent') {
+          results.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+        }
+
+        state.filteredGames = results;
+        renderGamesGrid();
+        updateResultsCount();
+      }
+
+      function updateResultsCount() {
+        DOM.countCurrent.textContent = state.filteredGames.length;
+        DOM.countTotal.textContent = state.allGames.length;
+      }
+
+      // --------------------------------------------------------------------------
+      // RENDERIZADO DEL CATÁLOGO DE TARJETAS
+      // --------------------------------------------------------------------------
+      function renderGamesGrid() {
+        if (state.filteredGames.length === 0) {
+          renderEmptyState();
+          return;
+        }
+
+        let html = '';
+        state.filteredGames.forEach((game) => {
+          html += `
+            <article class="game-card" data-id="${game.id}">
+              
+              <!-- Portada con Imagen y Badges -->
+              <div class="card-media" onclick="window.nexusOpenModal('${game.id}')" title="Ver detalles de ${escapeHtml(game.titulo)}">
+                <img 
+                  src="${escapeHtml(game.imagen)}" 
+                  alt="Portada de ${escapeHtml(game.titulo)}" 
+                  class="card-img" 
+                  loading="lazy"
+                  onerror="this.onerror=null; this.src='${DEFAULT_FALLBACK_IMAGE}';"
+                />
+                <div class="card-media-gradient"></div>
+                <div class="card-floating-badges">
+                  <span class="badge badge-primary">${escapeHtml(game.etiqueta)}</span>
+                  <span class="card-size-chip"><i class="fa-solid fa-hard-drive"></i> ${escapeHtml(game.tamano)}</span>
+                </div>
+              </div>
+
+              <!-- Cuerpo de la Tarjeta -->
+              <div class="card-body">
+                
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                  <span class="badge badge-purple" style="font-size:0.7rem; padding:2px 8px;">
+                    ${escapeHtml(game.categoria)}
+                  </span>
+                </div>
+
+                <h3 class="card-title" onclick="window.nexusOpenModal('${game.id}')" title="${escapeHtml(game.titulo)}">
+                  ${escapeHtml(game.titulo)}
+                </h3>
+
+                <!-- Requisitos del Sistema Compactos -->
+                <div class="card-requirements">
+                  <div class="req-header">
+                    <i class="fa-solid fa-microchip"></i> Requisitos Mínimos
+                  </div>
+                  <div class="req-text" title="${escapeHtml(game.requisitos)}">
+                    ${escapeHtml(game.requisitos)}
+                  </div>
+                </div>
+
+                <!-- Clave WinRAR con Copiado Rápido -->
+                <div 
+                  class="card-password-box" 
+                  onclick="window.nexusCopy('${escapeHtml(game.clave)}')" 
+                  title="Haz clic para copiar la clave WinRAR"
+                >
+                  <div class="pwd-info">
+                    <i class="fa-solid fa-key pwd-icon"></i>
+                    <div>
+                      <div class="pwd-label">Clave WinRAR:</div>
+                      <div class="pwd-value">${escapeHtml(game.clave)}</div>
+                    </div>
+                  </div>
+                  <button type="button" class="copy-icon-btn" aria-label="Copiar clave">
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                </div>
+
+                <!-- Acciones Principales -->
+                <div class="card-actions">
+                  <a 
+                    href="${escapeHtml(game.enlace_descarga)}" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    class="btn card-btn-download"
+                    title="Descargar ${escapeHtml(game.titulo)}"
+                  >
+                    <i class="fa-solid fa-download"></i> Descargar
+                  </a>
+                  <button 
+                    type="button" 
+                    class="btn card-btn-details" 
+                    onclick="window.nexusOpenModal('${game.id}')"
+                    title="Ver más información"
+                  >
+                    <i class="fa-solid fa-circle-info"></i>
+                  </button>
+                </div>
+
+              </div>
+
+            </article>
+          `;
         });
+
+        DOM.gamesGrid.innerHTML = html;
+      }
+
+      // --------------------------------------------------------------------------
+      // ESTADOS VACÍO Y ERROR
+      // --------------------------------------------------------------------------
+      function renderEmptyState() {
+        DOM.gamesGrid.innerHTML = `
+          <div class="feedback-state">
+            <div class="feedback-icon neon-text-cyan">
+              <i class="fa-solid fa-ghost"></i>
+            </div>
+            <h3 class="feedback-title">No se encontraron juegos</h3>
+            <p class="feedback-text">
+              No hay títulos en la bóveda que coincidan con "${escapeHtml(state.searchQuery)}" en la categoría seleccionada.
+            </p>
+            <button class="btn btn-outline-cyan" onclick="window.nexusResetFilters()">
+              <i class="fa-solid fa-rotate-left"></i> Restablecer Filtros
+            </button>
+          </div>
+        `;
+      }
+
+      function renderErrorState(message) {
+        DOM.gamesGrid.innerHTML = `
+          <div class="feedback-state" style="border-color: rgba(255, 0, 85, 0.4);">
+            <div class="feedback-icon" style="color: var(--neon-pink);">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="feedback-title">Error al Cargar la Bóveda</h3>
+            <p class="feedback-text">
+              ${escapeHtml(message)}<br>
+              Asegúrate de que el archivo <code>juegos.json</code> existe en la raíz del servidor o prueba a recargar.
+            </p>
+            <button class="btn btn-primary" onclick="location.reload()">
+              <i class="fa-solid fa-arrow-rotate-right"></i> Reintentar Carga
+            </button>
+          </div>
+        `;
+      }
+
+      // --------------------------------------------------------------------------
+      // MODAL DE DETALLES EXPANSIBLE
+      // --------------------------------------------------------------------------
+      function openGameModal(game) {
+        if (!game) return;
+
+        DOM.modalHeaderImg.src = game.imagen;
+        DOM.modalHeaderImg.onerror = () => { DOM.modalHeaderImg.src = DEFAULT_FALLBACK_IMAGE; };
+        DOM.modalGameTitle.textContent = game.titulo;
+        DOM.modalCategory.textContent = game.categoria;
+        DOM.modalBadge.textContent = game.etiqueta;
+        DOM.modalSize.textContent = game.tamano;
+        DOM.modalDate.textContent = game.fecha;
+        DOM.modalSynopsis.textContent = game.sinopsis;
+        DOM.modalRequirements.textContent = game.requisitos;
+        DOM.modalKeyValue.textContent = game.clave;
+        DOM.modalStepKey.textContent = game.clave;
+
+        // Botón Descarga del Modal
+        DOM.modalDownloadBtn.href = game.enlace_descarga;
+
+        // Botón Telegram si tiene IDs válidos
+        if (game.telegram_channel_id || game.telegram_message_id) {
+          DOM.modalTelegramBtn.style.display = 'inline-flex';
+          const cleanChannel = String(game.telegram_channel_id).replace('-100', '');
+          const msgId = game.telegram_message_id || 1;
+          DOM.modalTelegramBtn.href = `https://t.me/c/${cleanChannel}/${msgId}`;
+        } else {
+          DOM.modalTelegramBtn.style.display = 'none';
+        }
+
+        // Configurar acción de copia de clave en el modal
+        DOM.modalCopyKeyBtn.onclick = () => copyToClipboard(game.clave);
+
+        // Abrir y animar
+        DOM.detailsModal.classList.add('active');
+        DOM.detailsModal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeGameModal() {
+        DOM.detailsModal.classList.remove('active');
+        DOM.detailsModal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+      }
+
+      // --------------------------------------------------------------------------
+      // UTILIDADES
+      // --------------------------------------------------------------------------
+      function escapeHtml(text) {
+        if (!text) return '';
+        return String(text)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      // --------------------------------------------------------------------------
+      // PUENTES GLOBALES PARA HANDLERS INLINE DEL HTML
+      // --------------------------------------------------------------------------
+      window.nexusOpenModal = function (gameId) {
+        const game = state.allGames.find(g => g.id === gameId);
+        if (game) openGameModal(game);
+      };
+
+      window.nexusCopy = function (text) {
+        copyToClipboard(text);
+      };
+
+      window.nexusResetFilters = function () {
+        state.searchQuery = '';
+        state.selectedCategory = 'all';
+        state.sortBy = 'recent';
+        DOM.searchInput.value = '';
+        DOM.searchClearBtn.style.display = 'none';
+        DOM.sortSelect.value = 'recent';
+
+        // Actualizar UI de botones de categoría
+        const catButtons = DOM.categoriesList.querySelectorAll('.category-btn');
+        catButtons.forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.cat === 'all');
+        });
+
+        applyFilters();
+      };
+
+      // --------------------------------------------------------------------------
+      // CONFIGURACIÓN DE EVENT LISTENERS
+      // --------------------------------------------------------------------------
+      function setupEventListeners() {
+        
+        // 1. Buscador en Vivo con debounce
+        let searchDebounceTimeout;
+        DOM.searchInput.addEventListener('input', (e) => {
+          const val = e.target.value;
+          estado.consulta de búsqueda = val;
+          DOM.búsquedaClearBtn.estilo.visualizar = val ? 'bloquear' : 'ninguno';
+
+          clearTimeout(tiempo de espera del rebote de búsqueda);
+          tiempo de espera del rebote de búsqueda = setTimeout(() => {
+            aplicar filtros();
+          }, 180);
+        });
+
+        // Botón limpiar búsqueda
+        DOM.búsquedaClearBtn.addEventListener('clic', () => {
+          DOM.entrada de búsqueda.valor = '';
+          estado.consulta de búsqueda = '';
+          DOM.búsquedaClearBtn.estilo.visualizar = 'ninguno';
+          DOM.entrada de búsqueda.enfoque();
+          aplicar filtros();
+        });
+
+        // Atajo de teclado: presionar '/' para enfocar búsqueda, 'Esc' para cerrar modal/búsqueda
+        documento.addEventListener('tecla abajo', (e) => {
+          si (e.clave === '/' && documento.elemento activo !== DOM.entrada de búsqueda && !DOM.detallesModal.lista de clases.contiene('activo')) {
+            e.PrevenirPredeterminado();
+            DOM.entrada de búsqueda.enfoque();
+          } else si (e.clave === 'Escape') {
+            si (DOM.detallesModal.lista de clases.contiene('activo')) {
+              cerrarGameModal();
+            } else si (documento.elemento activo === DOM.entrada de búsqueda) {
+              DOM.entrada de búsqueda.desenfocar();
+            }
+          }
+        });
+
+        // 2. Filtro de Categorías
+        DOM.Lista de categorías.addEventListener('clic', (e) => {
+          const btn = e.objetivo.más cerca('.categoría-btn');
+          si (!btn) retorno;
+
+          const Botones de gato = DOM.Lista de categorías.Selector de consultasTodos('.categoría-btn');
+          Botones de gato.para cada uno(b => b.lista de clases.eliminar('activo'));
+          btn.lista de clases.agregar('activo');
+
+          estado.categoría seleccionada = btn.dataset.gato;
+          aplicar filtros();
+        });
+
+        // 3. Selector de Ordenación
+        DOM.sortSelect.addEventListener('cambio', (e) => {
+          estado.ordenar por = e.objetivo.valor;
+          aplicar filtros();
+        });
+
+        // 4. Modal de Detalles: Cerrar clic en fondo o botón
+        DOM.modalCerrarBtn.addEventListener('clic', cerrarGameModal);
+        DOM.detallesModal.addEventListener('clic', (e) => {
+          si (e.objetivo === DOM.detallesModal) {
+            cerrarGameModal();
+          }
+        });
+
+        // 5. Año real en el pie de página
+        si (DOM.año actual) {
+          DOM.año actual.contenido de texto = nuevo Fecha().obtener año completo();
+        }
+      }
+
+      // --------------------------------------------------------
+      // INICIALIZACIÓN AL CARGAR LA PÁGINA
+      // --------------------------------------------------------
+      documento.addEventListener('DOMContentLoaded', () => {
+        configuraciónEventListeners();
+        obtener datos de juegos();
       });
+
+    })();
   </script>
-</body>
+</cuerpo>
 </html>
