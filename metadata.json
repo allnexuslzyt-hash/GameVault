@@ -1,0 +1,6 @@
+{
+  "name": "Nexus Games - Game Vault",
+  "description": "Plataforma gamer y ciberpunk de catálogo de videojuegos para PC con descargas directas, claves y requisitos de sistema.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
