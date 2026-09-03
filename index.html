@@ -1,53 +1,251 @@
 <!DOCTYPE html>
 <html lang="es">
-<cabeza>
-  <meta conjunto de caracteres=„UTF-8">
-  <meta nombre="ventana gráfica" contenido="ancho=ancho del dispositivo, escala inicial=1.0">
-  <típulo>Juegos Nexus</típulo>
-  <estilo>
-    cuerpo { familia de fuentes: sistema-ui, -sistema-manzana, sans-serif; fondo: #0f172a; color: #f8fafc; aclamado: 20px; margen: 0; }
-    h1 { alineación de texto: centro; color: #38bdf8; tamaño de fuente: 2.2rem; }
-    .rejilla { visualizar: rejilla; columnas de planta de cuadra: repetir(auto-fill, minmax(280px, 1fr)); brecha: 20px; ancho máximo: 1200px; margen: 40px auto 0; }
-    .tarjeta { fondo: #1e293b; radio frontrizo: 12px; acompañado: 16px; visualizar: flex; flex-direction: columna; justificar-contenido: espacio-entre; frontera: 1px sólido #334155; }
-    .tarjeta img { ancho: 100%; alta: 160px; ajuste de objeto: cubrir; radio fronterizo: 8px; }
-    .tarjeta h3 { marca: 12px 0 6px; color: #f1f5f9; }
-    .tarjeta p { tamaño de fuente: 0,9em; color: #94a3b8; marca: 4px 0; }
-    .btn { visualizar: bloque; alineación de texto: centro; fondo: #0284c7; color: blanco; acompañado: 10px; decoración de texto: ninguno; radio fronterizo: 8px; peso de fuente: negrita; margen superior: 12px; transición: fondo 0,2s; }
-    .btn:hover { fondo: #0369a1; }
-    .discapacitado { fondo: #475569; eventos de puntero: ninguno; opacidad: 0,7; }
-  </estilo>
-</cabeza>
-<cuervo>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus Games | Catálogo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --card-bg: #151c2c;
+      --border-color: #232d42;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #22c55e;
+    }
 
-  <h1>Juegos Nexus</h1>
-  <div clasa="cuadrícula" id="contenedor de juegos"></div>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 30px 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 24px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--primary);
+      box-shadow: 0 12px 24px -10px rgba(56, 189, 248, 0.15);
+    }
+
+    .card-img-wrapper {
+      width: 100%;
+      height: 170px;
+      background: #1e293b;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .card-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-main);
+    }
+
+    .card-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 16px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      color: #0f172a;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      border-radius: 10px;
+      transition: background 0.2s ease, opacity 0.2s ease;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: var(--primary-hover);
+      color: #ffffff;
+    }
+
+    .btn.disabled {
+      background: #334155;
+      color: #64748b;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .loading, .error-msg {
+      text-align: center;
+      grid-column: 1 / -1;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Nexus Games</h1>
+      <p>Catálogo automatizado de descargas rápidas</p>
+    </header>
+
+    <div class="grid" id="games-container">
+      <div class="loading">Cargando catálogo de juegos...</div>
+    </div>
+  </div>
 
   <script>
-    async función cargaJuegos() {
-      intentar {
+    const DEFAULT_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='180' viewBox='0 0 300 180'%3E%3Crect width='100%25' height='100%25' fill='%231e293b'/%3E%3Ctext x='50%25' y='50%25' fill='%2364748b' font-family='sans-serif' font-size='16' text-anchor='middle' dy='.3em'%3ENexus Games%3C/text%3E%3C/svg%3E";
+
+    async function cargarJuegos() {
+      const container = document.getElementById('games-container');
+      try {
         const res = await fetch('juegos.json');
+        if (!res.ok) throw new Error("No se pudo cargar el archivo juegos.json");
+        
         const juegos = await res.json();
-        const contenedor = documento.getElementById('contenedor de juegos');
-        contenedor.HTML interno = juegos.mapa(juego => `
-          <div class="tarjeta">
-            <div>
-              <img src="${juego.imagen || 'https://via.placeholder.com/300x180'}" alt="${juego.titulo}">
-              <h3>${juego.titulo}</h3>
-              <p>${juego.descripción || ''}</p>
-              <p><fuerte>Tamaño:</fuerte> ${juego.peso || 'N/A'}</p>
+
+        if (!juegos || juegos.length === 0) {
+          container.innerHTML = `<div class="loading">No hay juegos disponibles por ahora.</div>`;
+          return;
+        }
+
+        container.innerHTML = juegos.map(juego => {
+          const tieneEnlace = juego.enlace_descarga && juego.enlace_descarga.startsWith('http');
+          const imgUrl = (juego.imagen && juego.imagen.startsWith('http')) ? juego.imagen : DEFAULT_IMG;
+
+          return `
+            <div class="card">
+              <div class="card-img-wrapper">
+                <img src="${imgUrl}" alt="${juego.titulo}" class="card-img" onerror="this.src='${DEFAULT_IMG}'">
+                <span class="badge">${juego.peso || 'N/A'}</span>
+              </div>
+              <div class="card-body">
+                <div>
+                  <h2 class="card-title">${juego.titulo}</h2>
+                  <p class="card-desc">${juego.descripcion || 'Sin descripción disponible.'}</p>
+                </div>
+                <div>
+                  <div class="card-meta">
+                    <span>Estado:</span>
+                    <strong style="color: ${tieneEnlace ? 'var(--accent)' : 'var(--primary)'}">
+                      ${tieneEnlace ? '● Online' : '⏳ Procesando'}
+                    </strong>
+                  </div>
+                  ${tieneEnlace 
+                    ? `<a href="${juego.enlace_descarga}" target="_blank" class="btn">Descargar Juego</a>`
+                    : `<a class="btn disabled">Generando enlace...</a>`
+                  }
+                </div>
+              </div>
             </div>
-            ${juego.enlace_descarga 
-              ? `<a href="${juego.enlace_descarga}" target="_blank" class="btn">Descargar Juego</a>`
-              : `<a class="btn deshabilitado">Generando enlace...</a>`
-            }
-          </div>
-        `).join('');
-      } atrapar (e) {
-        consola.error("Error cargando el catálogo:", e);
+          `;
+        }).join('');
+
+      } catch (e) {
+        console.error(e);
+        container.innerHTML = `<div class="error-msg">⚠️ Error al cargar el catálogo de juegos. Verifica juegos.json</div>`;
       }
     }
-    cargaJuegos();
+
+    cargarJuegos();
   </script>
 
-</cuervo>
+</body>
 </html>
