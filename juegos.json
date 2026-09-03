@@ -8,5 +8,15 @@
     "telegram_channel_id": "-1004381947395",
     "telegram_message_id": "4",
     "enlace_descarga": "https://gofile.io/d/H5BzjTDs"
+  },
+  {
+    "id": "lego-batman-legacy",
+    "titulo": "LEGO Batman: Legacy of the Dark Knight",
+    "descripcion": "Aventura y acción en el universo de LEGO Batman.",
+    "imagen": "https://via.placeholder.com/300x180",
+    "peso": "41 GB",
+    "telegram_channel_id": "-1004381947395",
+    "mensajes_partes": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
+    "enlace_descarga": ""
   }
 ]
