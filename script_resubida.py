@@ -1,22 +1,11 @@
 import os
 import json
 import requests
-import sys
 from telethon.sync import TelegramClient
 
-raw_api_id = os.environ.get('TELEGRAM_API_ID', '').strip()
-API_HASH = os.environ.get('TELEGRAM_API_HASH', '').strip()
-BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '').strip()
-
-if not raw_api_id or not API_HASH or not BOT_TOKEN:
-    print("❌ ERROR: Faltan uno o más Secrets (TELEGRAM_API_ID, TELEGRAM_API_HASH, TELEGRAM_BOT_TOKEN).")
-    sys.exit(1)
-
-try:
-    API_ID = int(raw_api_id)
-except ValueError:
-    print(f"❌ ERROR: TELEGRAM_API_ID debe ser un número entero. Valor recibido: '{raw_api_id}'")
-    sys.exit(1)
+API_ID = int(os.environ.get('TELEGRAM_API_ID', 0))
+API_HASH = os.environ.get('TELEGRAM_API_HASH', '')
+BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 
 def comprobar_enlace(url):
     if not url or "gofile.io" not in url:
@@ -32,80 +21,111 @@ def comprobar_enlace(url):
         print(f"Error comprobando URL: {e}")
         return False
 
-def resubir_a_gofile(file_path):
+def obtener_servidor_gofile():
     try:
         resp_server = requests.get("https://api.gofile.io/servers", timeout=10).json()
-        if resp_server.get('status') != 'ok':
-            print("❌ GoFile no devolvió un servidor disponible.")
-            return None
-        server = resp_server['data']['servers'][0]['name']
-        
-        print(f"Subiendo archivo a GoFile (Servidor: {server})...")
-        with open(file_path, 'rb') as f:
-            upload_url = f"https://{server}.gofile.io/contents/uploadfile"
-            resp = requests.post(upload_url, files={'file': f}, timeout=600).json()
-            
-        if resp.get('status') == 'ok':
-            return resp['data']['downloadPage']
-        print(f"❌ Error devuelto por GoFile: {resp}")
-        return None
+        if resp_server.get('status') == 'ok':
+            return resp_server['data']['servers'][0]['name']
     except Exception as e:
-        print(f"❌ Error en la subida a GoFile: {e}")
+        print(f"Error obteniendo servidor GoFile: {e}")
+    return None
+
+def subir_archivo_gofile(server, file_path, folder_id=None):
+    try:
+        upload_url = f"https://{server}.gofile.io/contents/uploadfile"
+        data = {}
+        if folder_id:
+            data['folderId'] = folder_id
+
+        with open(file_path, 'rb') as f:
+            resp = requests.post(upload_url, files={'file': f}, data=data, timeout=1200).json()
+
+        if resp.get('status') == 'ok':
+            return resp['data']
+        else:
+            print(f"Error respuesta GoFile: {resp}")
+            return None
+    except Exception as e:
+        print(f"Error subiendo {file_path} a GoFile: {e}")
         return None
 
 def main():
     if not os.path.exists('juegos.json'):
-        print("❌ No se encontró el archivo juegos.json")
-        sys.exit(1)
+        return
 
     with open('juegos.json', 'r', encoding='utf-8') as f:
         juegos = json.load(f)
 
     cambios = False
 
-    try:
-        with TelegramClient('bot_session', API_ID, API_HASH).start(bot_token=BOT_TOKEN) as client:
-            for juego in juegos:
-                url_actual = juego.get('enlace_descarga', '')
-                print(f"🔍 Verificando: {juego['titulo']}...")
+    with TelegramClient('bot_session', API_ID, API_HASH).start(bot_token=BOT_TOKEN) as client:
+        for juego in juegos:
+            url_actual = juego.get('enlace_descarga', '')
+            titulo = juego.get('titulo', 'Sin título')
+            print(f"Verificando: {titulo}...")
 
-                if not comprobar_enlace(url_actual):
-                    print(f"⚠️ Enlace caído o no existente para '{juego['titulo']}'. Descargando de Telegram...")
-                    try:
-                        chat_id = int(juego['telegram_channel_id'])
-                        msg_id = int(juego['telegram_message_id'])
+            if not comprobar_enlace(url_actual):
+                print(f"⚠️ Enlace caído o no existente para {titulo}. Resubiendo...")
+                
+                # Detectar si es un solo mensaje o una lista de partes
+                raw_msg_ids = juego.get('telegram_message_id')
+                if isinstance(raw_msg_ids, list):
+                    msg_ids = [int(m) for m in raw_msg_ids]
+                elif raw_msg_ids is not None:
+                    msg_ids = [int(raw_msg_ids)]
+                else:
+                    print(f"❌ {titulo} no tiene telegram_message_id configurado.")
+                    continue
+
+                try:
+                    chat_id = int(juego['telegram_channel_id'])
+                    server = obtener_servidor_gofile()
+                    if not server:
+                        print("No se pudo obtener un servidor activo de GoFile.")
+                        continue
+
+                    folder_id = None
+                    nuevo_enlace = None
+
+                    for i, msg_id in enumerate(msg_ids, start=1):
+                        print(f"  └─ Procesando parte {i}/{len(msg_ids)} (Mensaje ID: {msg_id})...")
+                        message = client.get_messages(chat_id, ids=msg_id)
                         
-                        entity = client.get_entity(chat_id)
-                        message = client.get_messages(entity, ids=msg_id)
-                        
-                        if message and message.media:
-                            temp_path = f"temp_{juego['id']}.rar"
-                            print("⬇️ Descargando archivo desde Telegram...")
+                        if message:
+                            temp_path = f"temp_{juego['id']}_part{i}.rar"
                             client.download_media(message, file=temp_path)
                             
-                            nuevo_enlace = resubir_a_gofile(temp_path)
+                            # Subir la parte a GoFile (vinculándola a la misma carpeta)
+                            upload_data = subir_archivo_gofile(server, temp_path, folder_id)
 
+                            # Eliminar la parte del disco inmediatamente para liberar memoria
                             if os.path.exists(temp_path):
                                 os.remove(temp_path)
 
-                            if nuevo_enlace:
-                                print(f"✅ ¡Resubido con éxito! Nuevo enlace: {nuevo_enlace}")
-                                juego['enlace_descarga'] = nuevo_enlace
-                                cambios = True
+                            if upload_data:
+                                if not folder_id:
+                                    folder_id = upload_data.get('parentFolder')
+                                    nuevo_enlace = upload_data.get('downloadPage')
                             else:
-                                print("❌ No se pudo obtener el nuevo enlace de GoFile.")
+                                print(f"❌ Falló la subida de la parte {i}. Abortando este juego.")
+                                nuevo_enlace = None
+                                break
                         else:
-                            print(f"❌ No se encontró el mensaje {msg_id} o no contiene un archivo multimedia.")
-                    except Exception as e:
-                        print(f"❌ Error al procesar '{juego['titulo']}': {e}")
-    except Exception as e:
-        print(f"❌ Error de conexión con Telegram: {e}")
-        sys.exit(1)
+                            print(f"❌ No se encontró el mensaje ID {msg_id} en Telegram.")
+                            nuevo_enlace = None
+                            break
+
+                    if nuevo_enlace:
+                        juego['enlace_descarga'] = nuevo_enlace
+                        cambios = True
+                        print(f"✅ Juego resubido con éxito. Nueva carpeta: {nuevo_enlace}")
+
+                except Exception as e:
+                    print(f"❌ Error al procesar '{titulo}': {e}")
 
     if cambios:
         with open('juegos.json', 'w', encoding='utf-8') as f:
             json.dump(juegos, f, indent=2, ensure_ascii=False)
-        print("💾 Base de datos juegos.json actualizada.")
 
 if __name__ == '__main__':
     main()
