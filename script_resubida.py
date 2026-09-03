@@ -16,12 +16,19 @@ def registrar_log(texto):
         f.write(texto + '\n')
 
 def comprobar_enlace(url):
+    """Comprueba si el enlace de GoFile está activo evitando bloqueos HTTP 403"""
     if not url or "gofile.io" not in url:
         return False
     try:
         content_id = url.split('/')[-1]
         api_url = f"https://api.gofile.io/contents/{content_id}"
-        r = requests.get(api_url, timeout=10)
+        
+        # Simula un navegador real para que GoFile no bloquee la comprobación automática
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+        
+        r = requests.get(api_url, headers=headers, timeout=10)
         if r.status_code == 200:
             return r.json().get('status') == 'ok'
         return False
@@ -58,7 +65,6 @@ def subir_archivo_gofile(server, file_path, folder_id=None):
         return None
 
 def main():
-    # Reiniciar el archivo de reporte de esta ejecución
     if os.path.exists(REPORTE_PATH):
         os.remove(REPORTE_PATH)
 
@@ -85,7 +91,6 @@ def main():
 
             registrar_log(f"⚠️ Estado: Enlace caído o inexistente. Iniciando resubida...")
 
-            # Soporta tanto entero único como lista de enteros
             raw_msg_ids = juego.get('telegram_message_id')
             if isinstance(raw_msg_ids, list):
                 msg_ids = [int(m) for m in raw_msg_ids]
@@ -113,10 +118,8 @@ def main():
                         temp_path = f"temp_{juego['id']}_part{i}.rar"
                         client.download_media(message, file=temp_path)
 
-                        # Subir la parte a GoFile
                         upload_data = subir_archivo_gofile(server, temp_path, folder_id)
 
-                        # Borrar la parte inmediatamente
                         if os.path.exists(temp_path):
                             os.remove(temp_path)
 
@@ -137,7 +140,7 @@ def main():
                     juego['enlace_descarga'] = nuevo_enlace
                     cambios = True
                     registrar_log(f"🔄 Resultado: Resubido con éxito.")
-                    registrar_log(f"🔗 Nuevo enlace: {nuevo_enlace}")
+                    registrar_log(f"🔗 Nuevo enlace carpeta: {nuevo_enlace}")
 
             except Exception as e:
                 registrar_log(f"❌ Error al procesar '{titulo}': {e}")
