@@ -46,8 +46,23 @@ def obtener_servidor_gofile():
         registrar_log(f"Error obteniendo servidor GoFile: {e}")
     return None
 
-def subir_archivo_gofile(server, file_path, folder_id=None, retries=3):
-    """Sube un archivo a GoFile con reintentos automáticos y manejo seguro de respuestas HTML/JSON"""
+def obtener_token_gofile():
+    """Obtiene un token de sesión anónima para poder meter múltiples partes en la misma carpeta"""
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+        r = requests.post("https://api.gofile.io/accounts", headers=headers, timeout=15)
+        if r.status_code == 200:
+            data = r.json()
+            if data.get('status') == 'ok':
+                return data['data']['token']
+    except Exception as e:
+        registrar_log(f"Error obteniendo token de GoFile: {e}")
+    return None
+
+def subir_archivo_gofile(server, file_path, token=None, folder_id=None, retries=3):
+    """Sube un archivo a GoFile adjuntando el token de sesión para evitar errores 401"""
     upload_url = f"https://{server}.gofile.io/contents/uploadfile"
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -56,6 +71,8 @@ def subir_archivo_gofile(server, file_path, folder_id=None, retries=3):
     for intento in range(1, retries + 1):
         try:
             data = {}
+            if token:
+                data['token'] = token
             if folder_id:
                 data['folderId'] = folder_id
 
@@ -122,6 +139,8 @@ def main():
             try:
                 chat_id = int(juego['telegram_channel_id'])
                 server = obtener_servidor_gofile()
+                token = obtener_token_gofile()
+
                 if not server:
                     registrar_log("❌ No se pudo obtener un servidor activo de GoFile.")
                     continue
@@ -131,13 +150,18 @@ def main():
 
                 for i, msg_id in enumerate(msg_ids, start=1):
                     registrar_log(f"  └─ Procesando parte {i}/{len(msg_ids)} (Mensaje ID: {msg_id})...")
+                    
+                    # Asegurar conexión activa con Telegram
+                    if not client.is_connected():
+                        client.connect()
+
                     message = client.get_messages(chat_id, ids=msg_id)
 
                     if message:
                         temp_path = f"temp_{juego['id']}_part{i}.rar"
                         client.download_media(message, file=temp_path)
 
-                        upload_data = subir_archivo_gofile(server, temp_path, folder_id)
+                        upload_data = subir_archivo_gofile(server, temp_path, token=token, folder_id=folder_id)
 
                         if os.path.exists(temp_path):
                             os.remove(temp_path)
