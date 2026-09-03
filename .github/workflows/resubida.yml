@@ -1,0 +1,39 @@
+nombre: Bot de rescate automático
+
+en:
+  cronograma:
+    - cron: '0 */6 * * *'
+  flujo de trabajo_despacho:
+
+empleo:
+  Comprobar y convertir un cargador:
+    run-on: ubuntu-último
+    timeout-minutos: 10
+    permisos:
+      contenidos: escribir
+
+    pasos:
+      - nombre: Verificar repositorio
+        usos: acciones/checkout@v4
+
+      - nombre: Configurar Python
+        usos: acciones/setup-python@v5
+        con:
+          versión python: '3.10'
+
+      - nombre: Dependencias instalaciones
+        run: pip instala solicitudes de teletón
+
+      - nombre: Guión ejecutivo
+        env:
+          TELEGRAM_API_ID: ${{ secretos.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secretos.TELEGRAM_API_HASH }}
+          TELEGRAM_BOT_TOKEN: ${{ secretos.TELEGRAM_BOT_TOKEN }}
+        run: python script_resubida.py
+
+      - nombre: Confirmar cambios
+        run: |
+          git config --nombre de usuario global "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git agrega juegos.json
+          git diff --silencio && git diff --escenificado --silencio || (git commit -m "Auto: Enlace resubido" && git push)
