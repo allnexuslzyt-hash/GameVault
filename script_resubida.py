@@ -16,21 +16,23 @@ def registrar_log(texto):
         f.write(texto + '\n')
 
 def comprobar_enlace(url):
-    """Comprueba si el enlace de GoFile está activo evitando bloqueos HTTP 403"""
+    """Comprueba directamente si la página web de GoFile está activa sin depender de su API"""
     if not url or "gofile.io" not in url:
         return False
     try:
-        content_id = url.split('/')[-1]
-        api_url = f"https://api.gofile.io/contents/{content_id}"
-        
-        # Simula un navegador real para que GoFile no bloquee la comprobación automática
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
         
-        r = requests.get(api_url, headers=headers, timeout=10)
+        # Consultamos la URL directa del navegador
+        r = requests.get(url, headers=headers, timeout=10)
+        
         if r.status_code == 200:
-            return r.json().get('status') == 'ok'
+            texto_pagina = r.text.lower()
+            # Si GoFile ha borrado el archivo o no existe, muestra mensajes de error en el HTML
+            if "error-notfound" in texto_pagina or "this content does not exist" in texto_pagina or "item not found" in texto_pagina:
+                return False
+            return True
         return False
     except Exception as e:
         registrar_log(f"Error comprobando URL ({url}): {e}")
