@@ -8,7 +8,7 @@ on:
 jobs:
   check-and-reupload:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 360
     permissions:
       contents: write
 
