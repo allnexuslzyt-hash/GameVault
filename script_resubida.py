@@ -38,6 +38,7 @@ def comprobar_enlace(url):
         return False
 
 def obtener_servidor_gofile():
+    """Obtiene el servidor de subida con menor carga en GoFile"""
     try:
         resp_server = requests.get("https://api.gofile.io/servers", timeout=15).json()
         if resp_server.get('status') == 'ok':
@@ -47,7 +48,7 @@ def obtener_servidor_gofile():
     return None
 
 def obtener_token_gofile():
-    """Obtiene un token de sesión anónima para poder meter múltiples partes en la misma carpeta"""
+    """Obtiene un token de sesión anónima para agrupar múltiples partes en la misma carpeta"""
     try:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -62,13 +63,16 @@ def obtener_token_gofile():
     return None
 
 def subir_archivo_gofile(server, file_path, token=None, folder_id=None, retries=3):
-    """Sube un archivo a GoFile adjuntando el token de sesión para evitar errores 401"""
-    upload_url = f"https://{server}.gofile.io/contents/uploadfile"
+    """Sube un archivo a GoFile adjuntando token y soportando reintentos"""
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
 
     for intento in range(1, retries + 1):
+        # Si es un reintento, intentamos refrescar el servidor de GoFile por si el anterior cayó
+        servidor_activo = server if intento == 1 else (obtener_servidor_gofile() or server)
+        upload_url = f"https://{servidor_activo}.gofile.io/contents/uploadfile"
+
         try:
             data = {}
             if token:
@@ -76,6 +80,8 @@ def subir_archivo_gofile(server, file_path, token=None, folder_id=None, retries=
             if folder_id:
                 data['folderId'] = folder_id
 
+            registrar_log(f"     ⬆️ Subiendo a GoFile ({servidor_activo})... Esto puede tardar unos minutos.")
+            
             with open(file_path, 'rb') as f:
                 resp_raw = requests.post(upload_url, files={'file': f}, data=data, headers=headers, timeout=1800)
 
@@ -149,9 +155,8 @@ def main():
                 nuevo_enlace = None
 
                 for i, msg_id in enumerate(msg_ids, start=1):
-                    registrar_log(f"  └─ Procesando parte {i}/{len(msg_ids)} (Mensaje ID: {msg_id})...")
+                    registrar_log(f"\n  └─ Procesando parte {i}/{len(msg_ids)} (Mensaje ID: {msg_id})...")
                     
-                    # Asegurar conexión activa con Telegram
                     if not client.is_connected():
                         client.connect()
 
@@ -159,10 +164,12 @@ def main():
 
                     if message:
                         temp_path = f"temp_{juego['id']}_part{i}.rar"
+                        registrar_log(f"     ⬇️ Descargando parte {i} desde Telegram...")
                         client.download_media(message, file=temp_path)
 
                         upload_data = subir_archivo_gofile(server, temp_path, token=token, folder_id=folder_id)
 
+                        # Limpieza de disco local
                         if os.path.exists(temp_path):
                             os.remove(temp_path)
 
@@ -170,6 +177,7 @@ def main():
                             if not folder_id:
                                 folder_id = upload_data.get('parentFolder')
                                 nuevo_enlace = upload_data.get('downloadPage')
+                            registrar_log(f"     ✅ Parte {i}/{len(msg_ids)} completada con éxito.")
                         else:
                             registrar_log(f"❌ Fallaron todos los intentos para la parte {i}. Abortando resubida de {titulo}.")
                             nuevo_enlace = None
@@ -179,10 +187,13 @@ def main():
                         nuevo_enlace = None
                         break
 
+                    # Pausa de 5 segundos entre partes para no saturar las APIs
+                    time.sleep(5)
+
                 if nuevo_enlace:
                     juego['enlace_descarga'] = nuevo_enlace
                     cambios = True
-                    registrar_log(f"🔄 Resultado: Resubido con éxito.")
+                    registrar_log(f"\n🔄 Resultado: Resubido con éxito.")
                     registrar_log(f"🔗 Nuevo enlace carpeta: {nuevo_enlace}")
 
             except Exception as e:
