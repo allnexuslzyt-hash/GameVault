@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import requests
 from telethon.sync import TelegramClient
 
@@ -24,12 +25,10 @@ def comprobar_enlace(url):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
         
-        # Consultamos la URL directa del navegador
-        r = requests.get(url, headers=headers, timeout=10)
+        r = requests.get(url, headers=headers, timeout=15)
         
         if r.status_code == 200:
             texto_pagina = r.text.lower()
-            # Si GoFile ha borrado el archivo o no existe, muestra mensajes de error en el HTML
             if "error-notfound" in texto_pagina or "this content does not exist" in texto_pagina or "item not found" in texto_pagina:
                 return False
             return True
@@ -40,31 +39,49 @@ def comprobar_enlace(url):
 
 def obtener_servidor_gofile():
     try:
-        resp_server = requests.get("https://api.gofile.io/servers", timeout=10).json()
+        resp_server = requests.get("https://api.gofile.io/servers", timeout=15).json()
         if resp_server.get('status') == 'ok':
             return resp_server['data']['servers'][0]['name']
     except Exception as e:
         registrar_log(f"Error obteniendo servidor GoFile: {e}")
     return None
 
-def subir_archivo_gofile(server, file_path, folder_id=None):
-    try:
-        upload_url = f"https://{server}.gofile.io/contents/uploadfile"
-        data = {}
-        if folder_id:
-            data['folderId'] = folder_id
+def subir_archivo_gofile(server, file_path, folder_id=None, retries=3):
+    """Sube un archivo a GoFile con reintentos automáticos y manejo seguro de respuestas HTML/JSON"""
+    upload_url = f"https://{server}.gofile.io/contents/uploadfile"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    }
 
-        with open(file_path, 'rb') as f:
-            resp = requests.post(upload_url, files={'file': f}, data=data, timeout=1200).json()
+    for intento in range(1, retries + 1):
+        try:
+            data = {}
+            if folder_id:
+                data['folderId'] = folder_id
 
-        if resp.get('status') == 'ok':
-            return resp['data']
-        else:
-            registrar_log(f"Error respuesta GoFile: {resp}")
-            return None
-    except Exception as e:
-        registrar_log(f"Error subiendo {file_path} a GoFile: {e}")
-        return None
+            with open(file_path, 'rb') as f:
+                resp_raw = requests.post(upload_url, files={'file': f}, data=data, headers=headers, timeout=1800)
+
+            if resp_raw.status_code == 200:
+                try:
+                    resp = resp_raw.json()
+                    if resp.get('status') == 'ok':
+                        return resp['data']
+                    else:
+                        registrar_log(f"  ⚠️ Intento {intento}/{retries}: GoFile devolvió error interno: {resp}")
+                except Exception:
+                    registrar_log(f"  ⚠️ Intento {intento}/{retries}: Respuesta no es JSON válido (servidor sobrecargado).")
+            else:
+                registrar_log(f"  ⚠️ Intento {intento}/{retries}: Código HTTP {resp_raw.status_code} de GoFile.")
+
+        except Exception as e:
+            registrar_log(f"  ⚠️ Intento {intento}/{retries} falló con excepción: {e}")
+
+        if intento < retries:
+            registrar_log(f"  🔄 Esperando 10 segundos antes del reintento {intento + 1}...")
+            time.sleep(10)
+
+    return None
 
 def main():
     if os.path.exists(REPORTE_PATH):
@@ -130,7 +147,7 @@ def main():
                                 folder_id = upload_data.get('parentFolder')
                                 nuevo_enlace = upload_data.get('downloadPage')
                         else:
-                            registrar_log(f"❌ Falló la subida de la parte {i}. Abortando resubida de {titulo}.")
+                            registrar_log(f"❌ Fallaron todos los intentos para la parte {i}. Abortando resubida de {titulo}.")
                             nuevo_enlace = None
                             break
                     else:
