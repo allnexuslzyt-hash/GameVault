@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<cabeza>
+  <meta conjunto de caracteres=„UTF-8">
+  <meta nombre="ventana gráfica" contenido="ancho=ancho del dispositivo, escala inicial=1.0">
+  <típulo>Juegos Nexus</típulo>
+  <estilo>
+    cuerpo { familia de fuentes: sistema-ui, -sistema-manzana, sans-serif; fondo: #0f172a; color: #f8fafc; aclamado: 20px; margen: 0; }
+    h1 { alineación de texto: centro; color: #38bdf8; tamaño de fuente: 2.2rem; }
+    .rejilla { visualizar: rejilla; columnas de planta de cuadra: repetir(auto-fill, minmax(280px, 1fr)); brecha: 20px; ancho máximo: 1200px; margen: 40px auto 0; }
+    .tarjeta { fondo: #1e293b; radio frontrizo: 12px; acompañado: 16px; visualizar: flex; flex-direction: columna; justificar-contenido: espacio-entre; frontera: 1px sólido #334155; }
+    .tarjeta img { ancho: 100%; alta: 160px; ajuste de objeto: cubrir; radio fronterizo: 8px; }
+    .tarjeta h3 { marca: 12px 0 6px; color: #f1f5f9; }
+    .tarjeta p { tamaño de fuente: 0,9em; color: #94a3b8; marca: 4px 0; }
+    .btn { visualizar: bloque; alineación de texto: centro; fondo: #0284c7; color: blanco; acompañado: 10px; decoración de texto: ninguno; radio fronterizo: 8px; peso de fuente: negrita; margen superior: 12px; transición: fondo 0,2s; }
+    .btn:hover { fondo: #0369a1; }
+    .discapacitado { fondo: #475569; eventos de puntero: ninguno; opacidad: 0,7; }
+  </estilo>
+</cabeza>
+<cuervo>
+
+  <h1>Juegos Nexus</h1>
+  <div clasa="cuadrícula" id="contenedor de juegos"></div>
+
+  <script>
+    async función cargaJuegos() {
+      intentar {
+        const res = await fetch('juegos.json');
+        const juegos = await res.json();
+        const contenedor = documento.getElementById('contenedor de juegos');
+        contenedor.HTML interno = juegos.mapa(juego => `
+          <div class="tarjeta">
+            <div>
+              <img src="${juego.imagen || 'https://via.placeholder.com/300x180'}" alt="${juego.titulo}">
+              <h3>${juego.titulo}</h3>
+              <p>${juego.descripción || ''}</p>
+              <p><fuerte>Tamaño:</fuerte> ${juego.peso || 'N/A'}</p>
+            </div>
+            ${juego.enlace_descarga 
+              ? `<a href="${juego.enlace_descarga}" target="_blank" class="btn">Descargar Juego</a>`
+              : `<a class="btn deshabilitado">Generando enlace...</a>`
+            }
+          </div>
+        `).join('');
+      } atrapar (e) {
+        consola.error("Error cargando el catálogo:", e);
+      }
+    }
+    cargaJuegos();
+  </script>
+
+</cuervo>
+</html>
