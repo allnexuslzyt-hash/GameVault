@@ -16,6 +16,21 @@ def registrar_log(texto):
     with open(REPORTE_PATH, 'a', encoding='utf-8') as f:
         f.write(texto + '\n')
 
+class ProgresoDescarga:
+    """Clase para mostrar el avance de descarga de Telegram en tramos de 10%"""
+    def __init__(self):
+        self.ultimo_porcentaje = -10
+
+    def callback(self, downloaded, total):
+        if not total:
+            return
+        porcentaje = int((downloaded / total) * 100)
+        if porcentaje >= self.ultimo_porcentaje + 10:
+            self.ultimo_porcentaje = porcentaje
+            mb_descargados = downloaded / (1024 * 1024)
+            mb_totales = total / (1024 * 1024)
+            registrar_log(f"     ⬇️ Progreso descarga Telegram: {porcentaje}% ({mb_descargados:.1f} / {mb_totales:.1f} MB)")
+
 def comprobar_enlace(url):
     """Comprueba directamente si la página web de GoFile está activa sin depender de su API"""
     if not url or "gofile.io" not in url:
@@ -24,9 +39,7 @@ def comprobar_enlace(url):
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
-        
         r = requests.get(url, headers=headers, timeout=15)
-        
         if r.status_code == 200:
             texto_pagina = r.text.lower()
             if "error-notfound" in texto_pagina or "this content does not exist" in texto_pagina or "item not found" in texto_pagina:
@@ -69,7 +82,6 @@ def subir_archivo_gofile(server, file_path, token=None, folder_id=None, retries=
     }
 
     for intento in range(1, retries + 1):
-        # Si es un reintento, intentamos refrescar el servidor de GoFile por si el anterior cayó
         servidor_activo = server if intento == 1 else (obtener_servidor_gofile() or server)
         upload_url = f"https://{servidor_activo}.gofile.io/contents/uploadfile"
 
@@ -80,7 +92,7 @@ def subir_archivo_gofile(server, file_path, token=None, folder_id=None, retries=
             if folder_id:
                 data['folderId'] = folder_id
 
-            registrar_log(f"     ⬆️ Subiendo a GoFile ({servidor_activo})... Esto puede tardar unos minutos.")
+            registrar_log(f"     ⬆️ Subiendo 2 GB a GoFile ({servidor_activo})... Por favor espera unos minutos.")
             
             with open(file_path, 'rb') as f:
                 resp_raw = requests.post(upload_url, files={'file': f}, data=data, headers=headers, timeout=1800)
@@ -93,7 +105,7 @@ def subir_archivo_gofile(server, file_path, token=None, folder_id=None, retries=
                     else:
                         registrar_log(f"  ⚠️ Intento {intento}/{retries}: GoFile devolvió error interno: {resp}")
                 except Exception:
-                    registrar_log(f"  ⚠️ Intento {intento}/{retries}: Respuesta no es JSON válido (servidor sobrecargado).")
+                    registrar_log(f"  ⚠️ Intento {intento}/{retries}: Respuesta no es JSON válido.")
             else:
                 registrar_log(f"  ⚠️ Intento {intento}/{retries}: Código HTTP {resp_raw.status_code} de GoFile.")
 
@@ -164,12 +176,14 @@ def main():
 
                     if message:
                         temp_path = f"temp_{juego['id']}_part{i}.rar"
-                        registrar_log(f"     ⬇️ Descargando parte {i} desde Telegram...")
-                        client.download_media(message, file=temp_path)
+                        registrar_log(f"     ⬇️ Iniciando descarga desde Telegram (2 GB aprox)...")
+                        
+                        progreso = ProgresoDescarga()
+                        client.download_media(message, file=temp_path, progress_callback=progreso.callback)
 
                         upload_data = subir_archivo_gofile(server, temp_path, token=token, folder_id=folder_id)
 
-                        # Limpieza de disco local
+                        # Limpieza de archivo local
                         if os.path.exists(temp_path):
                             os.remove(temp_path)
 
@@ -187,7 +201,6 @@ def main():
                         nuevo_enlace = None
                         break
 
-                    # Pausa de 5 segundos entre partes para no saturar las APIs
                     time.sleep(5)
 
                 if nuevo_enlace:
