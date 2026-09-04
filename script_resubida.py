@@ -6,7 +6,7 @@ import sys
 import requests
 from telethon import TelegramClient
 
-print("🚀 Iniciando script_resubida.py...")
+print("🚀 Iniciando script_resubida.py...", flush=True)
 
 # --- CONFIGURACIÓN Y VARIABLES DE ENTORNO ---
 API_ID = os.environ.get("TELEGRAM_API_ID")
@@ -16,13 +16,23 @@ GOFILE_TOKEN = os.environ.get("GOFILE_API_TOKEN")
 
 JSON_FILE = "juegos.json"
 
-# Comprobación previa de credenciales
+# Comprobación de credenciales iniciales
 if not API_ID or not API_HASH or not BOT_TOKEN:
-  print("❌ ERROR CRÍTICO: Faltan variables de entorno en GitHub Secrets.")
   print(
-      f"  - TELEGRAM_API_ID: {'Presente' if API_ID else '❌ FALTANTE'}\n  -"
-      f" TELEGRAM_API_HASH: {'Presente' if API_HASH else '❌ FALTANTE'}\n  -"
-      f" TELEGRAM_BOT_TOKEN: {'Presente' if BOT_TOKEN else '❌ FALTANTE'}"
+      "❌ ERROR CRÍTICO: Faltan variables de entorno en GitHub Secrets.",
+      flush=True,
+  )
+  print(
+      f"  - TELEGRAM_API_ID: {'Presente' if API_ID else '❌ FALTANTE'}",
+      flush=True,
+  )
+  print(
+      f"  - TELEGRAM_API_HASH: {'Presente' if API_HASH else '❌ FALTANTE'}",
+      flush=True,
+  )
+  print(
+      f"  - TELEGRAM_BOT_TOKEN: {'Presente' if BOT_TOKEN else '❌ FALTANTE'}",
+      flush=True,
   )
   sys.exit(1)
 
@@ -32,7 +42,7 @@ def guardar_progreso_y_push(data):
   try:
     with open(JSON_FILE, "w", encoding="utf-8") as f:
       json.dump(data, f, ensure_ascii=False, indent=2)
-    print("💾 'juegos.json' actualizado localmente.")
+    print("💾 'juegos.json' actualizado localmente.", flush=True)
 
     subprocess.run(
         ["git", "config", "--global", "user.name", "github-actions[bot]"],
@@ -66,11 +76,11 @@ def guardar_progreso_y_push(data):
           ["git", "pull", "origin", "main", "--rebase"], check=False
       )
       subprocess.run(["git", "push"], check=False)
-      print("🚀 Progreso guardado y subido a GitHub exitosamente.")
+      print("🚀 Progreso guardado y subido a GitHub exitosamente.", flush=True)
     else:
-      print("ℹ️ Sin cambios nuevos que commitear.")
+      print("ℹ️ Sin cambios nuevos que commitear.", flush=True)
   except Exception as e:
-    print(f"⚠️ Error al realizar el push a GitHub: {e}")
+    print(f"⚠️ Error al realizar el push a GitHub: {e}", flush=True)
 
 
 def es_enlace_valido(url):
@@ -92,7 +102,10 @@ def es_enlace_valido(url):
     if data.get("status") == "ok":
       return True
   except Exception as e:
-    print(f"⚠️ Error comprobando estado del enlace GoFile ({url}): {e}")
+    print(
+        f"⚠️ Error comprobando estado del enlace GoFile ({url}): {e}",
+        flush=True,
+    )
 
   return False
 
@@ -106,7 +119,7 @@ def obtener_servidor_gofile():
       if servers:
         return servers[0]["name"]
   except Exception as e:
-    print(f"⚠️ Error al consultar servidores GoFile: {e}")
+    print(f"⚠️ Error al consultar servidores GoFile: {e}", flush=True)
   return "store1"
 
 
@@ -123,7 +136,8 @@ def subir_a_gofile(filepath, folder_id=None):
 
   print(
       f"📤 Subiendo '{filepath}' a GoFile (Servidor: {server}, CarpetaID:"
-      f" {folder_id or 'Nueva'})..."
+      f" {folder_id or 'Nueva'})...",
+      flush=True,
   )
 
   with open(filepath, "rb") as f:
@@ -154,19 +168,21 @@ async def procesar_juego(client, juego, todos_los_juegos):
   lista_msg_ids = list(msg_ids) if es_lista else [msg_ids]
 
   if not lista_msg_ids:
-    print(f"✅ '{titulo}' ya no tiene partes pendientes.")
+    print(f"✅ '{titulo}' ya no tiene partes pendientes.", flush=True)
     return
 
   print(
       f"\n🎮 Procesando '{titulo}' - Partes pendientes:"
-      f" {len(lista_msg_ids)}"
+      f" {len(lista_msg_ids)}",
+      flush=True,
   )
 
   while lista_msg_ids:
     msg_id = lista_msg_ids[0]
     print(
         f"\n📥 Descargando mensaje ID {msg_id} de Telegram (Canal:"
-        f" {channel_id})..."
+        f" {channel_id})...",
+        flush=True,
     )
 
     archivo_local = None
@@ -175,7 +191,10 @@ async def procesar_juego(client, juego, todos_los_juegos):
     try:
       message = await client.get_messages(channel_id, ids=msg_id)
       if not message or not message.media:
-        print(f"❌ Mensaje ID {msg_id} sin archivo adjunto. Omitiendo...")
+        print(
+            f"❌ Mensaje ID {msg_id} sin archivo adjunto. Omitiendo...",
+            flush=True,
+        )
         lista_msg_ids.pop(0)
         juego["telegram_message_id"] = lista_msg_ids if es_lista else None
         guardar_progreso_y_push(todos_los_juegos)
@@ -189,14 +208,15 @@ async def procesar_juego(client, juego, todos_los_juegos):
           mb_total = total / (1024 * 1024)
           print(
               f"⬇️ Progreso descarga Telegram: {pct}% ({mb_down:.1f} /"
-              f" {mb_total:.1f} MB)"
+              f" {mb_total:.1f} MB)",
+              flush=True,
           )
           ultimo_porcentaje = pct
 
       archivo_local = await client.download_media(
           message, progress_callback=callback_progreso
       )
-      print("✅ Descarga de Telegram finalizada.")
+      print("✅ Descarga de Telegram finalizada.", flush=True)
 
       download_page, parent_folder = subir_a_gofile(archivo_local, folder_id)
 
@@ -211,31 +231,41 @@ async def procesar_juego(client, juego, todos_los_juegos):
 
       print(
           f"✨ Parte subida con éxito. Enlace único de carpeta:"
-          f" {juego['enlace_descarga']}"
+          f" {juego['enlace_descarga']}",
+          flush=True,
       )
 
       guardar_progreso_y_push(todos_los_juegos)
 
     except Exception as e:
-      print(f"\n❌ Error durante el procesamiento de la parte {msg_id}: {e}")
-      print("🛑 Proceso detenido para mantener a salvo las partes subidas.")
+      print(
+          f"\n❌ Error durante el procesamiento de la parte {msg_id}: {e}",
+          flush=True,
+      )
+      print(
+          "🛑 Proceso detenido para mantener a salvo las partes subidas.",
+          flush=True,
+      )
       break
     finally:
       if archivo_local and os.path.exists(archivo_local):
         os.remove(archivo_local)
-        print(f"🗑️ Archivo local '{archivo_local}' eliminado.")
+        print(f"🗑️ Archivo local '{archivo_local}' eliminado.", flush=True)
 
 
 async def main():
   if not os.path.exists(JSON_FILE):
-    print(f"❌ No se encontró el archivo {JSON_FILE}")
+    print(f"❌ No se encontró el archivo {JSON_FILE}", flush=True)
     sys.exit(1)
 
   try:
     with open(JSON_FILE, "r", encoding="utf-8") as f:
       juegos = json.load(f)
   except Exception as e:
-    print(f"❌ Error al leer '{JSON_FILE}'. Revisa la sintaxis JSON: {e}")
+    print(
+        f"❌ Error al leer '{JSON_FILE}'. Revisa la sintaxis JSON: {e}",
+        flush=True,
+    )
     sys.exit(1)
 
   try:
@@ -243,7 +273,8 @@ async def main():
   except ValueError:
     print(
         f"❌ ERROR: TELEGRAM_API_ID debe ser un número entero. Valor actual:"
-        f" {API_ID}"
+        f" {API_ID}",
+        flush=True,
     )
     sys.exit(1)
 
@@ -257,23 +288,25 @@ async def main():
   )
 
   await client.start(bot_token=BOT_TOKEN)
-  print("🤖 Cliente de Telegram iniciado correctamente.")
+  print("🤖 Cliente de Telegram iniciado correctamente.", flush=True)
 
   for juego in juegos:
     titulo = juego.get("titulo") or juego.get("nombre") or "Juego"
     enlace_existente = juego.get("enlace_descarga")
 
     if enlace_existente:
-      print(f"🔍 Verificando estado del enlace de '{titulo}'...")
+      print(f"🔍 Verificando estado del enlace de '{titulo}'...", flush=True)
       if es_enlace_valido(enlace_existente):
         print(
-            f"✅ El enlace de '{titulo}' sigue activo en GoFile. Saltando..."
+            f"✅ El enlace de '{titulo}' sigue activo en GoFile. Saltando...",
+            flush=True,
         )
         continue
       else:
         print(
             f"⚠️ El enlace de '{titulo}' ha caducado o no existe."
-            " Resubiendo..."
+            " Resubiendo...",
+            flush=True,
         )
         juego["enlace_descarga"] = ""
         juego["gofile_folder_id"] = ""
@@ -284,9 +317,8 @@ async def main():
     await procesar_juego(client, juego, juegos)
 
   await client.disconnect()
-  print("\n🎉 Proceso completado con éxito.")
+  print("\n🎉 Proceso completado con éxito.", flush=True)
 
 
 if __name__ == "__main__":
   asyncio.run(main())
-    
