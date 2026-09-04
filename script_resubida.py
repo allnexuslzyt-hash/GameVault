@@ -51,32 +51,57 @@ def guardar_progreso_y_push(data):
         print(f"⚠️ Error al realizar el push a GitHub: {e}", flush=True)
 
 
-def es_enlace_valido(url):
-    """Verifica si un enlace de GoFile está activo o ha caducado."""
-    if not url or not isinstance(url, str):
+def es_enlace_valido(juego):
+    """
+    Verifica si la carpeta de GoFile sigue existiendo en sus servidores.
+    Solo marca como caducado si GoFile confirma explícitamente un error 404 o 'notFound'.
+    Ante cualquier fallo de red o error inusual (401/500), conserva la carpeta por seguridad.
+    """
+    folder_id = juego.get("gofile_folder_id")
+    url = juego.get("enlace_descarga")
+
+    if not folder_id and not url:
         return False
 
-    try:
-        content_id = url.strip().rstrip("/").split("/")[-1]
-        api_url = f"https://api.gofile.io/contents/{content_id}"
+    if folder_id:
+        try:
+            api_url = f"https://api.gofile.io/contents/{folder_id}"
+            headers = HEADERS_BASE.copy()
+            if GOFILE_TOKEN:
+                headers["Authorization"] = f"Bearer {GOFILE_TOKEN}"
 
-        headers = HEADERS_BASE.copy()
-        if GOFILE_TOKEN:
-            headers["Authorization"] = f"Bearer {GOFILE_TOKEN}"
+            res = requests.get(api_url, headers=headers, timeout=10)
 
-        response = requests.get(api_url, headers=headers, timeout=10)
+            if res.status_code == 200:
+                data = res.json()
+                if data.get("status") == "ok":
+                    return True
+                elif data.get("status") in ["error-notFound", "error-notFoundOrNotAuthorized"]:
+                    print(f"⚠️ La carpeta de '{juego.get('titulo')}' ya NO existe en GoFile (Caducada).", flush=True)
+                    return False
 
-        if response.status_code == 200:
-            data = response.json()
-            if data.get("status") == "ok":
+            if res.status_code == 404:
+                print(f"⚠️ GoFile devolvió 404 para '{juego.get('titulo')}'. Se creará una carpeta nueva.", flush=True)
+                return False
+
+            print(f"⚠️ Respuesta inusual de GoFile (HTTP {res.status_code}) para '{juego.get('titulo')}'. Conservando carpeta por seguridad.", flush=True)
+            return True
+
+        except Exception as e:
+            print(f"⚠️ Error de conexión verificando GoFile ({e}). Conservando carpeta por seguridad.", flush=True)
+            return True
+
+    if url:
+        try:
+            res = requests.get(url, headers=HEADERS_BASE, timeout=10, allow_redirects=True)
+            if res.status_code == 200:
                 return True
-        else:
-            print(f"⚠️ GoFile devolvió HTTP {response.status_code} al verificar {url}", flush=True)
+            if res.status_code == 404:
+                return False
+        except Exception:
+            pass
 
-    except Exception as e:
-        print(f"⚠️ Error comprobando estado del enlace GoFile ({url}): {e}", flush=True)
-
-    return False
+    return True
 
 
 def obtener_servidor_gofile():
@@ -216,19 +241,20 @@ async def main():
     for juego in juegos:
         titulo = juego.get("titulo") or juego.get("nombre") or "Juego"
         enlace_existente = juego.get("enlace_descarga")
+        folder_id_existente = juego.get("gofile_folder_id")
         msg_ids = juego.get("telegram_message_id")
 
         if not msg_ids:
-            if enlace_existente:
-                if es_enlace_valido(enlace_existente):
+            if enlace_existente or folder_id_existente:
+                if es_enlace_valido(juego):
                     print(f"✅ '{titulo}' ya está completado y el enlace sigue activo. Saltando...", flush=True)
                 else:
                     print(f"⚠️ El enlace de '{titulo}' caducó, pero no hay partes configuradas para resubir.", flush=True)
             continue
 
-        if enlace_existente:
-            if not es_enlace_valido(enlace_existente):
-                print(f"⚠️ El enlace previo de '{titulo}' caducó. Creando carpeta nueva...", flush=True)
+        if enlace_existente or folder_id_existente:
+            if not es_enlace_valido(juego):
+                print(f"⚠️ El enlace de '{titulo}' caducó confirmadamente. Se creará una nueva carpeta al subir la siguiente parte.", flush=True)
                 juego["enlace_descarga"] = ""
                 juego["gofile_folder_id"] = ""
 
