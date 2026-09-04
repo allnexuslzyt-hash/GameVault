@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 import requests
 from telethon import TelegramClient
 
@@ -117,31 +118,48 @@ def obtener_servidor_gofile():
     return "store1"
 
 
-def subir_a_gofile(filepath, folder_id=None):
-    """Subo el archivo a GoFile. Si recibe folder_id, lo mete en esa misma carpeta."""
-    server = obtener_servidor_gofile()
-    url = f"https://{server}.gofile.io/contents/uploadfile"
+def subir_a_gofile(filepath, folder_id=None, max_reintentos=5):
+    """
+    Subo el archivo a GoFile con reintentos automáticos en caso de fallo de servidor o red.
+    """
+    for intento in range(1, max_reintentos + 1):
+        server = obtener_servidor_gofile()
+        url = f"https://{server}.gofile.io/contents/uploadfile"
 
-    payload = {}
-    if GOFILE_TOKEN:
-        payload["token"] = GOFILE_TOKEN
-    if folder_id:
-        payload["folderId"] = folder_id
+        payload = {}
+        if GOFILE_TOKEN:
+            payload["token"] = GOFILE_TOKEN
+        if folder_id:
+            payload["folderId"] = folder_id
 
-    print(f"📤 Subiendo '{filepath}' a GoFile (Servidor: {server}, CarpetaID: {folder_id or 'Nueva'})...", flush=True)
+        print(f"📤 Intento {intento}/{max_reintentos}: Subiendo '{filepath}' a GoFile (Servidor: {server}, CarpetaID: {folder_id or 'Nueva'})...", flush=True)
 
-    with open(filepath, "rb") as f:
-        files = {"file": f}
-        response = requests.post(url, files=files, data=payload, headers=HEADERS_BASE, timeout=3600)
+        try:
+            with open(filepath, "rb") as f:
+                files = {"file": f}
+                response = requests.post(url, files=files, data=payload, headers=HEADERS_BASE, timeout=3600)
 
-    res_json = response.json()
-    if res_json.get("status") == "ok":
-        data = res_json["data"]
-        download_page = data.get("downloadPage")
-        parent_folder = data.get("parentFolder") or data.get("folderId")
-        return download_page, parent_folder
-    else:
-        raise Exception(f"GoFile devolvió error: {res_json}")
+            if response.status_code == 200:
+                res_json = response.json()
+                if res_json.get("status") == "ok":
+                    data = res_json["data"]
+                    download_page = data.get("downloadPage")
+                    parent_folder = data.get("parentFolder") or data.get("folderId")
+                    return download_page, parent_folder
+                else:
+                    print(f"⚠️ GoFile devolvió respuesta fallida en intento {intento}: {res_json}", flush=True)
+            else:
+                print(f"⚠️ El servidor {server} devolvió HTTP {response.status_code} (no-JSON) en intento {intento}.", flush=True)
+
+        except Exception as e:
+            print(f"⚠️ Error durante la subida en intento {intento}: {e}", flush=True)
+
+        if intento < max_reintentos:
+            tiempo_espera = 15 * intento
+            print(f"⏳ Esperando {tiempo_espera}s antes de reintentar con un servidor fresco...", flush=True)
+            time.sleep(tiempo_espera)
+
+    raise Exception(f"Incapaz de subir '{filepath}' a GoFile tras {max_reintentos} intentos.")
 
 
 async def procesar_juego(client, juego, todos_los_juegos):
@@ -207,7 +225,7 @@ async def procesar_juego(client, juego, todos_los_juegos):
             guardar_progreso_y_push(todos_los_juegos)
 
         except Exception as e:
-            print(f"\n❌ Error durante el procesamiento de la parte {msg_id}: {e}", flush=True)
+            print(f"\n❌ Error definitivo tras reintentos en la parte {msg_id}: {e}", flush=True)
             print("🛑 Proceso detenido para mantener a salvo las partes subidas.", flush=True)
             break
         finally:
