@@ -43,7 +43,7 @@ def guardar_progreso_y_push(data):
                 "git",
                 "commit",
                 "-m",
-                "Auto: Guardado de parte completada en GoFile",
+                "Auto: Actualización de estado / parte completada en GoFile",
             ],
             capture_output=True,
             text=True,
@@ -61,6 +61,30 @@ def guardar_progreso_y_push(data):
         print(f"⚠️ Error al realizar el push a GitHub: {e}")
 
 
+def es_enlace_valido(url):
+    """Verifica si un enlace de GoFile está activo o ha caducado."""
+    if not url or not isinstance(url, str):
+        return False
+
+    try:
+        content_id = url.strip().rstrip("/").split("/")[-1]
+        api_url = f"https://api.gofile.io/contents/{content_id}"
+
+        headers = {}
+        if GOFILE_TOKEN:
+            headers["Authorization"] = f"Bearer {GOFILE_TOKEN}"
+
+        response = requests.get(api_url, headers=headers, timeout=10)
+        data = response.json()
+
+        if data.get("status") == "ok":
+            return True
+    except Exception as e:
+        print(f"⚠️ Error comprobando estado del enlace GoFile ({url}): {e}")
+
+    return False
+
+
 def obtener_servidor_gofile():
     """Obtiene el servidor activo de GoFile."""
     try:
@@ -75,10 +99,7 @@ def obtener_servidor_gofile():
 
 
 def subir_a_gofile(filepath, folder_id=None):
-    """Subo el archivo a GoFile.
-
-    Si recibe folder_id, lo mete en esa misma carpeta.
-    """
+    """Subo el archivo a GoFile. Si recibe folder_id, lo mete en esa misma carpeta."""
     server = obtener_servidor_gofile()
     url = f"https://{server}.gofile.io/contents/uploadfile"
 
@@ -137,6 +158,8 @@ async def procesar_juego(client, juego, todos_los_juegos):
         )
 
         archivo_local = None
+        ultimo_porcentaje = -1
+
         try:
             message = await client.get_messages(channel_id, ids=msg_id)
             if not message or not message.media:
@@ -147,31 +170,30 @@ async def procesar_juego(client, juego, todos_los_juegos):
                 continue
 
             def callback_progreso(downloaded, total):
-                pct = (downloaded / total) * 100
-                mb_down = downloaded / (1024 * 1024)
-                mb_total = total / (1024 * 1024)
-                print(
-                    f"\r⬇️ Progreso descarga Telegram: {pct:.1f}% ({mb_down:.1f} /"
-                    f" {mb_total:.1f} MB)",
-                    end="",
-                )
+                nonlocal ultimo_porcentaje
+                pct = int((downloaded / total) * 100)
+                if pct % 10 == 0 and pct != ultimo_porcentaje:
+                    mb_down = downloaded / (1024 * 1024)
+                    mb_total = total / (1024 * 1024)
+                    print(
+                        f"⬇️ Progreso descarga Telegram: {pct}% ({mb_down:.1f} /"
+                        f" {mb_total:.1f} MB)"
+                    )
+                    ultimo_porcentaje = pct
 
             archivo_local = await client.download_media(
                 message, progress_callback=callback_progreso
             )
-            print("\n✅ Descarga de Telegram finalizada.")
+            print("✅ Descarga de Telegram finalizada.")
 
-            # Subida a GoFile (usando folder_id si existe)
             download_page, parent_folder = subir_a_gofile(archivo_local, folder_id)
 
-            # Guardar el enlace de la carpeta única
             if not juego.get("enlace_descarga"):
                 juego["enlace_descarga"] = download_page
             if not juego.get("gofile_folder_id") and parent_folder:
                 juego["gofile_folder_id"] = parent_folder
                 folder_id = parent_folder
 
-            # Eliminar el ID procesado
             lista_msg_ids.pop(0)
             juego["telegram_message_id"] = lista_msg_ids if es_lista else None
 
@@ -180,7 +202,6 @@ async def procesar_juego(client, juego, todos_los_juegos):
                 f" {juego['enlace_descarga']}"
             )
 
-            # Commit y push a GitHub inmediatamente
             guardar_progreso_y_push(todos_los_juegos)
 
         except Exception as e:
@@ -188,7 +209,6 @@ async def procesar_juego(client, juego, todos_los_juegos):
             print("🛑 Proceso detenido para mantener a salvo las partes subidas.")
             break
         finally:
-            # Eliminar archivo local para liberar espacio en disco
             if archivo_local and os.path.exists(archivo_local):
                 os.remove(archivo_local)
                 print(f"🗑️ Archivo local '{archivo_local}' eliminado.")
@@ -215,13 +235,25 @@ async def main():
     print("🤖 Cliente de Telegram iniciado.")
 
     for juego in juegos:
-        msg_ids = juego.get("telegram_message_id")
-        tiene_pendientes = (
-            bool(msg_ids) if isinstance(msg_ids, list) else (msg_ids is not None)
-        )
+        titulo = juego.get("titulo") or juego.get("nombre") or "Juego"
+        enlace_existente = juego.get("enlace_descarga")
 
-        if tiene_pendientes:
-            await procesar_juego(client, juego, juegos)
+        # Verificación de validez del enlace si existe
+        if enlace_existente:
+            print(f"🔍 Verificando estado del enlace de '{titulo}'...")
+            if es_enlace_valido(enlace_existente):
+                print(f"✅ El enlace de '{titulo}' sigue activo en GoFile. Saltando...")
+                continue
+            else:
+                print(f"⚠️ El enlace de '{titulo}' ha caducado o no existe. Resubiendo...")
+                juego["enlace_descarga"] = ""
+                juego["gofile_folder_id"] = ""
+
+        # Si no tiene mensajes pendientes, omitir
+        if not juego.get("telegram_message_id"):
+            continue
+
+        await procesar_juego(client, juego, juegos)
 
     await client.disconnect()
     print("\n🎉 Proceso completado con éxito.")
@@ -229,4 +261,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-  
+    
