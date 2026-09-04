@@ -29,6 +29,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install telethon cryptg tgcrypto requests
 
+      - name: Limpiar temporales y descargas antiguas
+        run: |
+          echo "🧹 Limpiando espacio en disco y archivos temporales..."
+          rm -rf *.part *.tmp *.rar *.zip *.7z *.iso 2>/dev/null || true
+
       - name: Ejecutar script de resubida
         env:
           TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
