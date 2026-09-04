@@ -16,6 +16,10 @@ GOFILE_TOKEN = os.environ.get("GOFILE_API_TOKEN")
 
 JSON_FILE = "juegos.json"
 
+HEADERS_BASE = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+}
+
 if not API_ID or not API_HASH or not BOT_TOKEN:
     print("❌ ERROR CRÍTICO: Faltan variables de entorno en GitHub Secrets.", flush=True)
     sys.exit(1)
@@ -56,15 +60,19 @@ def es_enlace_valido(url):
         content_id = url.strip().rstrip("/").split("/")[-1]
         api_url = f"https://api.gofile.io/contents/{content_id}"
 
-        headers = {}
+        headers = HEADERS_BASE.copy()
         if GOFILE_TOKEN:
             headers["Authorization"] = f"Bearer {GOFILE_TOKEN}"
 
         response = requests.get(api_url, headers=headers, timeout=10)
-        data = response.json()
 
-        if data.get("status") == "ok":
-            return True
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("status") == "ok":
+                return True
+        else:
+            print(f"⚠️ GoFile devolvió HTTP {response.status_code} al verificar {url}", flush=True)
+
     except Exception as e:
         print(f"⚠️ Error comprobando estado del enlace GoFile ({url}): {e}", flush=True)
 
@@ -74,7 +82,7 @@ def es_enlace_valido(url):
 def obtener_servidor_gofile():
     """Obtiene el servidor activo de GoFile."""
     try:
-        resp = requests.get("https://api.gofile.io/servers").json()
+        resp = requests.get("https://api.gofile.io/servers", headers=HEADERS_BASE, timeout=10).json()
         if resp.get("status") == "ok":
             servers = resp["data"]["servers"]
             if servers:
@@ -99,7 +107,7 @@ def subir_a_gofile(filepath, folder_id=None):
 
     with open(filepath, "rb") as f:
         files = {"file": f}
-        response = requests.post(url, files=files, data=payload, timeout=3600)
+        response = requests.post(url, files=files, data=payload, headers=HEADERS_BASE, timeout=3600)
 
     res_json = response.json()
     if res_json.get("status") == "ok":
@@ -210,16 +218,14 @@ async def main():
         enlace_existente = juego.get("enlace_descarga")
         msg_ids = juego.get("telegram_message_id")
 
-        # Si ya no quedan mensajes por procesar
         if not msg_ids:
             if enlace_existente:
                 if es_enlace_valido(enlace_existente):
                     print(f"✅ '{titulo}' ya está completado y el enlace sigue activo. Saltando...", flush=True)
                 else:
-                    print(f"⚠️ El enlace de '{titulo}' ha caducado, pero no hay partes configuradas para resubir.", flush=True)
+                    print(f"⚠️ El enlace de '{titulo}' caducó, pero no hay partes configuradas para resubir.", flush=True)
             continue
 
-        # Si quedan partes pendientes pero había un enlace previo, validamos que la carpeta siga viva
         if enlace_existente:
             if not es_enlace_valido(enlace_existente):
                 print(f"⚠️ El enlace previo de '{titulo}' caducó. Creando carpeta nueva...", flush=True)
