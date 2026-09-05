@@ -1,0 +1,39 @@
+name: Generar Session String
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Instalar Telethon
+        run: pip install telethon
+
+      - name: Obtener clave
+        env:
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          python -c "
+          import os
+          from telethon import TelegramClient
+          from telethon.sessions import StringSession
+
+          api_id = os.environ['TELEGRAM_API_ID']
+          api_hash = os.environ['TELEGRAM_API_HASH']
+          bot_token = os.environ['TELEGRAM_BOT_TOKEN']
+
+          client = TelegramClient(StringSession(), int(api_id), api_hash)
+          client.start(bot_token=bot_token)
+          print('\n================ CLAVE DE SESION ================\n')
+          print(client.session.save())
+          print('\n=================================================\n')
+          client.disconnect()
+          "
