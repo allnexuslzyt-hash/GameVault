@@ -75,9 +75,9 @@
     "etiqueta": "NUEVO",
     "destacado": false,
     "telegram_channel_id": "-1004381947395",
-    "telegram_message_id": 27,
-    "enlace_descarga": "",
-    "gofile_folder_id": ""
+    "telegram_message_id": null,
+    "enlace_descarga": "https://gofile.io/d/P5d3TvtR",
+    "gofile_folder_id": "a498cc51-dc97-4983-8685-ee33aaff0c14"
   },
   {
     "id": "how-to-fish",
