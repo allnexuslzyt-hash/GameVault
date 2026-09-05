@@ -40,6 +40,8 @@ jobs:
           TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           GOFILE_API_TOKEN: ${{ secrets.GOFILE_API_TOKEN }}
+          TELEGRAM_SESSION_STRING: ${{ secrets.TELEGRAM_SESSION_STRING }}
+          SCRAPERAPI_KEY: ${{ secrets.SCRAPERAPI_KEY }}
         run: python script_resubida.py
 
       - name: Guardar progreso en Git
@@ -51,4 +53,3 @@ jobs:
           git diff-index --quiet HEAD || git commit -m "Auto: Progreso de resubida actualizado"
           git pull origin main --rebase
           git push
-          
