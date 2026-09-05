@@ -71,7 +71,6 @@ def es_enlace_valido(juego):
 
     gofile_url = f"https://api.gofile.io/contents/{folder_id}"
     
-    # Si tenemos ScraperAPI, pasamos la petición por su túnel anti-Cloudflare
     if SCRAPER_KEY:
         api_url = f"http://api.scraperapi.com?api_key={SCRAPER_KEY}&url={gofile_url}"
     else:
@@ -84,12 +83,10 @@ def es_enlace_valido(juego):
     try:
         res = requests.get(api_url, headers=headers, timeout=25)
 
-        # 1. Código 404: Carpeta borrada
         if res.status_code == 404:
             print(f"🚨 BORRADO CONFIRMADO (404): '{titulo}' ya no existe en GoFile.", flush=True)
             return False
 
-        # 2. Respuesta HTTP 200 OK
         if res.status_code == 200:
             try:
                 data = res.json()
@@ -112,7 +109,6 @@ def es_enlace_valido(juego):
                 print(f"⚠️ Respuesta no-JSON para '{titulo}'. CONSERVANDO ENLACE por seguridad.", flush=True)
                 return True
 
-        # Ante cualquier otro código HTTP (500, timeouts, etc.), conservar el enlace
         print(f"⚠️ Respuesta inusual HTTP {res.status_code} para '{titulo}'. CONSERVANDO ENLACE.", flush=True)
         return True
 
@@ -270,7 +266,7 @@ async def main():
         print(f"❌ ERROR: TELEGRAM_API_ID inválido.", flush=True)
         sys.exit(1)
 
-    # --- AUTOCORRECCIÓN Y PADDING DE SESSION_STRING ---
+    # --- CORRECCIÓN AUTOMÁTICA DE FORMATO Y PADDING ---
     session_str = SESSION_STRING.strip().strip("'").strip('"') if SESSION_STRING else ""
     if session_str:
         missing_padding = len(session_str) % 4
@@ -291,18 +287,15 @@ async def main():
         titulo = juego.get("titulo") or juego.get("nombre") or "Juego"
         msg_ids = juego.get("telegram_message_id")
 
-        # 1. Comprobación mediante ScraperAPI
         if es_enlace_valido(juego):
             continue
 
-        # 2. Solo resube si GoFile borró explícitamente la carpeta
         print(f"⚠️ Preparando resubida de '{titulo}'...", flush=True)
         
         if msg_ids is None:
             print(f"❌ '{titulo}' no tiene telegram_message_id configurado.", flush=True)
             continue
 
-        # Limpiar enlaces antiguos antes de la resubida
         juego["enlace_descarga"] = ""
         juego["gofile_folder_id"] = ""
 
