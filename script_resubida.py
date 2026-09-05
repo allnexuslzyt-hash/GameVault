@@ -56,7 +56,6 @@ def es_enlace_valido(juego):
     """
     Verifica si la carpeta de GoFile sigue existiendo en sus servidores.
     Solo marca como caducado si GoFile confirma explícitamente un error 404 o 'notFound'.
-    Ante cualquier fallo de red o error inusual (401/500), conserva la carpeta por seguridad.
     """
     folder_id = juego.get("gofile_folder_id")
     url = juego.get("enlace_descarga")
@@ -119,9 +118,7 @@ def obtener_servidor_gofile():
 
 
 def subir_a_gofile(filepath, folder_id=None, max_reintentos=5):
-    """
-    Subo el archivo a GoFile con reintentos automáticos en caso de fallo de servidor o red.
-    """
+    """Subo el archivo a GoFile con reintentos automáticos."""
     for intento in range(1, max_reintentos + 1):
         server = obtener_servidor_gofile()
         url = f"https://{server}.gofile.io/contents/uploadfile"
@@ -149,14 +146,14 @@ def subir_a_gofile(filepath, folder_id=None, max_reintentos=5):
                 else:
                     print(f"⚠️ GoFile devolvió respuesta fallida en intento {intento}: {res_json}", flush=True)
             else:
-                print(f"⚠️ El servidor {server} devolvió HTTP {response.status_code} (no-JSON) en intento {intento}.", flush=True)
+                print(f"⚠️ El servidor {server} devolvió HTTP {response.status_code} en intento {intento}.", flush=True)
 
         except Exception as e:
             print(f"⚠️ Error durante la subida en intento {intento}: {e}", flush=True)
 
         if intento < max_reintentos:
             tiempo_espera = 15 * intento
-            print(f"⏳ Esperando {tiempo_espera}s antes de reintentar con un servidor fresco...", flush=True)
+            print(f"⏳ Esperando {tiempo_espera}s antes de reintentar...", flush=True)
             time.sleep(tiempo_espera)
 
     raise Exception(f"Incapaz de subir '{filepath}' a GoFile tras {max_reintentos} intentos.")
@@ -168,7 +165,7 @@ async def procesar_juego(client, juego, todos_los_juegos):
     msg_ids = juego.get("telegram_message_id")
     folder_id = juego.get("gofile_folder_id")
 
-    if not channel_id_raw or not msg_ids:
+    if not channel_id_raw or msg_ids is None:
         return
 
     channel_id = int(channel_id_raw)
@@ -176,10 +173,10 @@ async def procesar_juego(client, juego, todos_los_juegos):
     lista_msg_ids = list(msg_ids) if es_lista else [msg_ids]
 
     if not lista_msg_ids:
-        print(f"✅ '{titulo}' ya no tiene partes pendientes.", flush=True)
+        print(f"✅ '{titulo}' no tiene partes pendientes.", flush=True)
         return
 
-    print(f"\n🎮 Procesando '{titulo}' - Partes pendientes: {len(lista_msg_ids)}", flush=True)
+    print(f"\n🎮 Procesando '{titulo}'...", flush=True)
 
     while lista_msg_ids:
         msg_id = lista_msg_ids[0]
@@ -193,7 +190,8 @@ async def procesar_juego(client, juego, todos_los_juegos):
             if not message or not message.media:
                 print(f"❌ Mensaje ID {msg_id} sin archivo adjunto. Omitiendo...", flush=True)
                 lista_msg_ids.pop(0)
-                juego["telegram_message_id"] = lista_msg_ids if es_lista else None
+                if es_lista:
+                    juego["telegram_message_id"] = lista_msg_ids
                 guardar_progreso_y_push(todos_los_juegos)
                 continue
 
@@ -211,14 +209,14 @@ async def procesar_juego(client, juego, todos_los_juegos):
 
             download_page, parent_folder = subir_a_gofile(archivo_local, folder_id)
 
-            if not juego.get("enlace_descarga"):
-                juego["enlace_descarga"] = download_page
-            if not juego.get("gofile_folder_id") and parent_folder:
-                juego["gofile_folder_id"] = parent_folder
-                folder_id = parent_folder
+            juego["enlace_descarga"] = download_page
+            juego["gofile_folder_id"] = parent_folder
+            folder_id = parent_folder
 
             lista_msg_ids.pop(0)
-            juego["telegram_message_id"] = lista_msg_ids if es_lista else None
+            # MANTENER el ID si es un solo número para que pueda resubirse si caduca en el futuro
+            if es_lista:
+                juego["telegram_message_id"] = lista_msg_ids
 
             print(f"✨ Parte subida con éxito. Carpeta de descarga: {juego['enlace_descarga']}", flush=True)
 
@@ -258,24 +256,25 @@ async def main():
 
     for juego in juegos:
         titulo = juego.get("titulo") or juego.get("nombre") or "Juego"
-        enlace_existente = juego.get("enlace_descarga")
-        folder_id_existente = juego.get("gofile_folder_id")
         msg_ids = juego.get("telegram_message_id")
 
-        if not msg_ids:
-            if enlace_existente or folder_id_existente:
-                if es_enlace_valido(juego):
-                    print(f"✅ '{titulo}' ya está completado y el enlace sigue activo. Saltando...", flush=True)
-                else:
-                    print(f"⚠️ El enlace de '{titulo}' caducó, pero no hay partes configuradas para resubir.", flush=True)
+        # 1. Comprobar si la carpeta en GoFile existe y está activa
+        if es_enlace_valido(juego):
+            print(f"✅ '{titulo}' ya está completado y la carpeta en GoFile está activa. Saltando...", flush=True)
             continue
 
-        if enlace_existente or folder_id_existente:
-            if not es_enlace_valido(juego):
-                print(f"⚠️ El enlace de '{titulo}' caducó confirmadamente. Se creará una nueva carpeta al subir la siguiente parte.", flush=True)
-                juego["enlace_descarga"] = ""
-                juego["gofile_folder_id"] = ""
+        # 2. Si la carpeta NO existe (borrada) o el enlace está vacío:
+        print(f"⚠️ La carpeta de '{titulo}' no existe o ha caducado en GoFile.", flush=True)
+        
+        if msg_ids is None:
+            print(f"❌ '{titulo}' no tiene telegram_message_id configurado para resubir.", flush=True)
+            continue
 
+        # Limpiar referencias viejas antes de volver a subir
+        juego["enlace_descarga"] = ""
+        juego["gofile_folder_id"] = ""
+
+        # Proceder a la resubida
         await procesar_juego(client, juego, juegos)
 
     await client.disconnect()
