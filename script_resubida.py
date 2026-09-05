@@ -8,7 +8,7 @@ import requests
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
-print("🚀 Iniciando script_resubida.py (Con ScraperAPI Anti-Cloudflare y Ajuste Exacto de Sesión)...", flush=True)
+print("🚀 Iniciando script_resubida.py (Con ScraperAPI Anti-Cloudflare y Timeout Ampliado)...", flush=True)
 
 # --- CONFIGURACIÓN Y VARIABLES DE ENTORNO ---
 API_ID = os.environ.get("TELEGRAM_API_ID")
@@ -72,7 +72,7 @@ def es_enlace_valido(juego):
     gofile_url = f"https://api.gofile.io/contents/{folder_id}"
     
     if SCRAPER_KEY:
-        api_url = f"http://api.scraperapi.com?api_key={SCRAPER_KEY}&url={gofile_url}"
+        api_url = f"https://api.scraperapi.com?api_key={SCRAPER_KEY}&url={gofile_url}"
     else:
         api_url = gofile_url
 
@@ -81,7 +81,8 @@ def es_enlace_valido(juego):
         headers["Authorization"] = f"Bearer {GOFILE_TOKEN}"
 
     try:
-        res = requests.get(api_url, headers=headers, timeout=25)
+        # Timeout aumentado a 60s para dar margen a ScraperAPI
+        res = requests.get(api_url, headers=headers, timeout=60)
 
         if res.status_code == 404:
             print(f"🚨 BORRADO CONFIRMADO (404): '{titulo}' ya no existe en GoFile.", flush=True)
