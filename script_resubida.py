@@ -22,8 +22,11 @@ HEADERS_BASE = {
 }
 
 if not API_ID or not API_HASH or not BOT_TOKEN:
-    print("❌ ERROR CRÍTICO: Faltan variables de entorno en GitHub Secrets.", flush=True)
+    print("❌ ERROR CRÍTICO: Faltan variables de entorno de Telegram en GitHub Secrets.", flush=True)
     sys.exit(1)
+
+if not GOFILE_TOKEN:
+    print("⚠️ ATENCIÓN: No se ha encontrado GOFILE_API_TOKEN. La verificación de tu cuenta no funcionará correctamente.", flush=True)
 
 
 def guardar_progreso_y_push(data):
@@ -54,59 +57,68 @@ def guardar_progreso_y_push(data):
 
 def es_enlace_valido(juego):
     """
-    DETECCIÓN ESTRICTA:
-    1. Si HTTP != 200 -> FALSO
-    2. Si status de GoFile != 'ok' -> FALSO (Carpeta borrada/inexistente)
-    3. Si status == 'ok' pero la lista de archivos está vacía -> FALSO (Archivos borrados)
+    VERIFICADOR OFICIAL POR API KEY:
+    Consulta directamente a la API de tu cuenta de GoFile si la carpeta existe
+    y contiene archivos activos.
     """
     folder_id = juego.get("gofile_folder_id")
     titulo = juego.get("titulo", "Juego")
 
     if not folder_id:
-        print(f"⚠️ '{titulo}' no tiene gofile_folder_id registrado. Forzando resubida...", flush=True)
+        print(f"⚠️ '{titulo}' no tiene gofile_folder_id. Forzando resubida...", flush=True)
         return False
 
+    if not GOFILE_TOKEN:
+        print(f"⚠️ Sin GOFILE_API_TOKEN no se puede verificar '{titulo}'. Asumiendo caducado para resubir...", flush=True)
+        return False
+
+    headers = HEADERS_BASE.copy()
+    headers["Authorization"] = f"Bearer {GOFILE_TOKEN}"
+
     try:
+        # Consulta autenticada de la carpeta a la API oficial
         api_url = f"https://api.gofile.io/contents/{folder_id}"
-        headers = HEADERS_BASE.copy()
-        if GOFILE_TOKEN:
-            headers["Authorization"] = f"Bearer {GOFILE_TOKEN}"
+        res = requests.get(api_url, headers=headers, timeout=15)
 
-        res = requests.get(api_url, headers=headers, timeout=10)
+        if res.status_code == 200:
+            data = res.json()
+            status = data.get("status")
 
-        # 1. Comprobación HTTP básica
-        if res.status_code != 200:
-            print(f"🚨 DETECTADO: GoFile devolvió HTTP {res.status_code} para '{titulo}'. La carpeta NO existe.", flush=True)
+            if status == "ok":
+                children = data.get("data", {}).get("children", {})
+                if children:
+                    print(f"✅ VERIFICADO (Cuenta GoFile): '{titulo}' existe con {len(children)} archivo(s) activo(s).", flush=True)
+                    return True
+                else:
+                    print(f"🚨 DETECTADO: La carpeta de '{titulo}' existe en tu cuenta pero está VACÍA (archivos eliminados).", flush=True)
+                    return False
+            else:
+                print(f"🚨 DETECTADO: Tu API devolvió estado '{status}' para '{titulo}'. La carpeta ya NO existe.", flush=True)
+                return False
+
+        elif res.status_code in [404, 403, 401]:
+            print(f"🚨 DETECTADO: Respuesta HTTP {res.status_code} de GoFile para '{titulo}'. Carpeta inexistente.", flush=True)
             return False
 
-        data = res.json()
-        status = data.get("status")
-
-        # 2. Regla estricta de estado API
-        if status != "ok":
-            print(f"🚨 DETECTADO: GoFile devolvió estado '{status}' para '{titulo}'. La carpeta fue ELIMINADA.", flush=True)
+        else:
+            print(f"⚠️ Respuesta inusual HTTP {res.status_code} de GoFile para '{titulo}'. Se forzará la resubida por seguridad.", flush=True)
             return False
-
-        # 3. Regla estricta de contenido (¿Hay archivos reales dentro?)
-        children = data.get("data", {}).get("children", {})
-        if not children:
-            print(f"🚨 DETECTADO: La carpeta de '{titulo}' existe pero está VACÍA (archivos borrados).", flush=True)
-            return False
-
-        print(f"✅ VERIFICADO: La carpeta de '{titulo}' existe y tiene {len(children)} archivo(s) activo(s).", flush=True)
-        return True
 
     except Exception as e:
-        print(f"⚠️ Error de conexión/comprobación para '{titulo}' ({e}). Se reintentará resubida por seguridad.", flush=True)
+        print(f"⚠️ Error al conectar con la API de GoFile para '{titulo}': {e}", flush=True)
         return False
 
 
 def obtener_servidor_gofile():
-    """Obtiene el servidor activo de GoFile."""
+    """Obtiene el servidor de carga activo usando tu API Token."""
+    headers = HEADERS_BASE.copy()
+    if GOFILE_TOKEN:
+        headers["Authorization"] = f"Bearer {GOFILE_TOKEN}"
+
     try:
-        resp = requests.get("https://api.gofile.io/servers", headers=HEADERS_BASE, timeout=10).json()
+        resp = requests.get("https://api.gofile.io/servers", headers=headers, timeout=10).json()
         if resp.get("status") == "ok":
-            servers = resp["data"]["servers"]
+            servers = resp.get("data", {}).get("servers", [])
             if servers:
                 return servers[0]["name"]
     except Exception as e:
@@ -115,7 +127,7 @@ def obtener_servidor_gofile():
 
 
 def subir_a_gofile(filepath, folder_id=None, max_reintentos=5):
-    """Subo el archivo a GoFile con reintentos automáticos."""
+    """Subo el archivo a GoFile vinculado a tu cuenta personal con reintentos."""
     for intento in range(1, max_reintentos + 1):
         server = obtener_servidor_gofile()
         url = f"https://{server}.gofile.io/contents/uploadfile"
@@ -126,7 +138,7 @@ def subir_a_gofile(filepath, folder_id=None, max_reintentos=5):
         if folder_id:
             payload["folderId"] = folder_id
 
-        print(f"📤 Intento {intento}/{max_reintentos}: Subiendo '{filepath}' a GoFile (Servidor: {server}, CarpetaID: {folder_id or 'Nueva'})...", flush=True)
+        print(f"📤 Intento {intento}/{max_reintentos}: Subiendo '{filepath}' a tu cuenta de GoFile...", flush=True)
 
         try:
             with open(filepath, "rb") as f:
@@ -141,9 +153,9 @@ def subir_a_gofile(filepath, folder_id=None, max_reintentos=5):
                     parent_folder = data.get("parentFolder") or data.get("folderId")
                     return download_page, parent_folder
                 else:
-                    print(f"⚠️ GoFile devolvió respuesta fallida en intento {intento}: {res_json}", flush=True)
+                    print(f"⚠️ GoFile devolvió error en intento {intento}: {res_json}", flush=True)
             else:
-                print(f"⚠️ El servidor {server} devolvió HTTP {response.status_code} en intento {intento}.", flush=True)
+                print(f"⚠️ Servidor GoFile devolvió HTTP {response.status_code} en intento {intento}.", flush=True)
 
         except Exception as e:
             print(f"⚠️ Error durante la subida en intento {intento}: {e}", flush=True)
@@ -254,22 +266,22 @@ async def main():
         titulo = juego.get("titulo") or juego.get("nombre") or "Juego"
         msg_ids = juego.get("telegram_message_id")
 
-        # 1. Comprobación estricta de existencia en GoFile
+        # 1. Comprobación autenticada contra tu cuenta
         if es_enlace_valido(juego):
             continue
 
-        # 2. Si la carpeta NO existe o está vacía:
+        # 2. Si la carpeta NO existe en tu cuenta o está vacía:
         print(f"⚠️ Resubiendo '{titulo}'...", flush=True)
         
         if msg_ids is None:
             print(f"❌ '{titulo}' no tiene telegram_message_id configurado para resubir.", flush=True)
             continue
 
-        # Limpiar datos antiguos para generar la carpeta limpia
+        # Limpiar referencias antiguas
         juego["enlace_descarga"] = ""
         juego["gofile_folder_id"] = ""
 
-        # Proceder a la resubida
+        # Proceder a descargar de Telegram y resubir a GoFile
         await procesar_juego(client, juego, juegos)
 
     await client.disconnect()
