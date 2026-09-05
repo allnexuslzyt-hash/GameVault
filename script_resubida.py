@@ -8,7 +8,7 @@ import requests
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
-print("🚀 Iniciando script_resubida.py (Con ScraperAPI Anti-Cloudflare y Limpieza de Sesión)...", flush=True)
+print("🚀 Iniciando script_resubida.py (Con ScraperAPI Anti-Cloudflare y Ajuste Exacto de Sesión)...", flush=True)
 
 # --- CONFIGURACIÓN Y VARIABLES DE ENTORNO ---
 API_ID = os.environ.get("TELEGRAM_API_ID")
@@ -266,24 +266,28 @@ async def main():
         print(f"❌ ERROR: TELEGRAM_API_ID inválido.", flush=True)
         sys.exit(1)
 
-    # --- LIMPIEZA Y SINITIZACIÓN DE SESSION_STRING ---
-    session_str = SESSION_STRING.strip().strip("'").strip('"').replace("\n", "").replace("\r", "").replace(" ", "")
-    session_str = session_str.rstrip("=")
-
-    if session_str:
+    # --- AJUSTE EXACTO SEPARANDO LA CABECERA '1' DEL PAYLOAD BASE64 ---
+    session_raw = SESSION_STRING.strip().strip("'").strip('"').replace("\n", "").replace("\r", "").replace(" ", "")
+    
+    session_obj = "sesion_bot"
+    if session_raw:
         try:
+            if session_raw.startswith("1"):
+                header = session_raw[0]
+                payload = session_raw[1:].rstrip("=")
+                missing_padding = len(payload) % 4
+                if missing_padding > 0:
+                    payload += "=" * (4 - missing_padding)
+                session_str = header + payload
+            else:
+                session_str = session_raw
+
             session_obj = StringSession(session_str)
             print("🔑 Cargando sesión desde TELEGRAM_SESSION_STRING...", flush=True)
-        except Exception:
-            mod = len(session_str) % 4
-            if mod == 2:
-                session_str += "=="
-            elif mod == 3:
-                session_str += "="
-            session_obj = StringSession(session_str)
-            print("🔑 Cargando sesión ajustada...", flush=True)
+        except Exception as e:
+            print(f"⚠️ No se pudo decodificar SESSION_STRING ({e}). Usando sesión por defecto...", flush=True)
+            session_obj = "sesion_bot"
     else:
-        session_obj = "sesion_bot"
         print("⚠️ No se detectó SESSION_STRING. Usando sesión por defecto...", flush=True)
 
     client = TelegramClient(session_obj, api_id_int, API_HASH, request_retries=15, connection_retries=15, timeout=60)
