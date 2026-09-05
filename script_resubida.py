@@ -6,20 +6,22 @@ import sys
 import time
 import requests
 from telethon import TelegramClient
+from telethon.sessions import StringSession
 
-print("🚀 Iniciando script_resubida.py en MODO PROTEGIDO...", flush=True)
+print("🚀 Iniciando script_resubida.py (Con ScraperAPI Anti-Cloudflare)...", flush=True)
 
 # --- CONFIGURACIÓN Y VARIABLES DE ENTORNO ---
 API_ID = os.environ.get("TELEGRAM_API_ID")
 API_HASH = os.environ.get("TELEGRAM_API_HASH")
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 GOFILE_TOKEN = os.environ.get("GOFILE_API_TOKEN")
+SESSION_STRING = os.environ.get("TELEGRAM_SESSION_STRING", "")
+SCRAPER_KEY = os.environ.get("SCRAPERAPI_KEY")
 
 JSON_FILE = "juegos.json"
 
 HEADERS_BASE = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Accept": "application/json"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 }
 
 if not API_ID or not API_HASH or not BOT_TOKEN:
@@ -39,7 +41,7 @@ def guardar_progreso_y_push(data):
         subprocess.run(["git", "add", JSON_FILE], check=False)
 
         commit_res = subprocess.run(
-            ["git", "commit", "-m", "Auto: Actualización de estado / parte completada en GoFile"],
+            ["git", "commit", "-m", "Auto: Estado de resubida actualizado"],
             capture_output=True, text=True
         )
 
@@ -55,32 +57,36 @@ def guardar_progreso_y_push(data):
 
 def es_enlace_valido(juego):
     """
-    VERIFICACIÓN PROTEGIDA:
-    Solo marca como caducado (False) si GoFile confirma 100% que NO existe o está vacía.
-    Ante cualquier duda de red o falta de token, conserva el enlace (True) para no descargar todo.
+    VERIFICACIÓN CON SCRAPERAPI:
+    Consulta la API de GoFile a través del proxy de ScraperAPI para evitar los bloqueos de Cloudflare.
+    Solo marca como caducado (False) si GoFile confirma al 100% que la carpeta NO existe o está VACÍA.
+    Ante cualquier fallo de red o duda, conserva el enlace (True) por seguridad.
     """
     folder_id = juego.get("gofile_folder_id")
-    titulo = juego.get("titulo", "Juego")
+    titulo = juego.get("titulo") or juego.get("nombre") or "Juego"
 
     if not folder_id:
-        print(f"⚠️ '{titulo}' no tiene carpeta asociada. Se programará para subir...", flush=True)
+        print(f"🆕 '{titulo}' no tiene carpeta asociada. Se programará para subir...", flush=True)
         return False
 
-    if not GOFILE_TOKEN:
-        print(f"⚠️ GOFILE_API_TOKEN no detectado en Secrets. Conservando '{titulo}' por seguridad.", flush=True)
-        return True
+    gofile_url = f"https://api.gofile.io/contents/{folder_id}"
+    
+    # Si tenemos ScraperAPI, pasamos la petición por su túnel anti-Cloudflare
+    if SCRAPER_KEY:
+        api_url = f"http://api.scraperapi.com?api_key={SCRAPER_KEY}&url={gofile_url}"
+    else:
+        api_url = gofile_url
 
-    # Pasamos el token por header y por URL para máxima compatibilidad
-    api_url = f"https://api.gofile.io/contents/{folder_id}?token={GOFILE_TOKEN}"
     headers = HEADERS_BASE.copy()
-    headers["Authorization"] = f"Bearer {GOFILE_TOKEN}"
+    if GOFILE_TOKEN:
+        headers["Authorization"] = f"Bearer {GOFILE_TOKEN}"
 
     try:
-        res = requests.get(api_url, headers=headers, timeout=12)
+        res = requests.get(api_url, headers=headers, timeout=25)
 
-        # 1. Error 404 explícito: la carpeta no existe en GoFile
+        # 1. Código 404: Carpeta borrada
         if res.status_code == 404:
-            print(f"🚨 BORRADO CONFIRMADO (HTTP 404): '{titulo}' ya no existe en GoFile.", flush=True)
+            print(f"🚨 BORRADO CONFIRMADO (404): '{titulo}' ya no existe en GoFile.", flush=True)
             return False
 
         # 2. Respuesta HTTP 200 OK
@@ -92,31 +98,31 @@ def es_enlace_valido(juego):
                 if status == "ok":
                     children = data.get("data", {}).get("children", {})
                     if children:
-                        print(f"✅ VERIFICADO: '{titulo}' está activo con {len(children)} archivo(s).", flush=True)
+                        print(f"✅ VÁLIDO: '{titulo}' existe con {len(children)} archivo(s) activo(s).", flush=True)
                         return True
                     else:
-                        print(f"🚨 BORRADO CONFIRMADO: La carpeta de '{titulo}' existe pero está VACÍA.", flush=True)
+                        print(f"🚨 BORRADO CONFIRMADO: La carpeta de '{titulo}' está VACÍA.", flush=True)
                         return False
 
-                elif status in ["error-notFound", "error-notFoundOrNotAuthorized"]:
+                if status in ["error-notFound", "error-notFoundOrNotAuthorized"]:
                     print(f"🚨 BORRADO CONFIRMADO (API '{status}'): '{titulo}' fue eliminado.", flush=True)
                     return False
 
             except Exception:
-                print(f"⚠️ Respuesta no-JSON para '{titulo}' (posible bloqueo temporal). Conservando por seguridad...", flush=True)
+                print(f"⚠️ Respuesta no-JSON para '{titulo}'. CONSERVANDO ENLACE por seguridad.", flush=True)
                 return True
 
-        # Ante cualquier otro código HTTP (403 Cloudflare, 500, etc.), conservamos el juego
-        print(f"⚠️ Respuesta inusual (HTTP {res.status_code}) para '{titulo}'. Conservando enlace...", flush=True)
+        # Ante cualquier otro código HTTP (500, timeouts, etc.), conservar el enlace
+        print(f"⚠️ Respuesta inusual HTTP {res.status_code} para '{titulo}'. CONSERVANDO ENLACE.", flush=True)
         return True
 
     except Exception as e:
-        print(f"⚠️ Error de conexión comprobando '{titulo}' ({e}). Conservando enlace...", flush=True)
+        print(f"⚠️ Error de conexión al consultar '{titulo}' ({e}). CONSERVANDO ENLACE.", flush=True)
         return True
 
 
 def obtener_servidor_gofile():
-    """Obtiene el servidor de carga activo usando tu API Token."""
+    """Obtiene el servidor de carga activo de GoFile."""
     headers = HEADERS_BASE.copy()
     if GOFILE_TOKEN:
         headers["Authorization"] = f"Bearer {GOFILE_TOKEN}"
@@ -133,7 +139,7 @@ def obtener_servidor_gofile():
 
 
 def subir_a_gofile(filepath, folder_id=None, max_reintentos=5):
-    """Subo el archivo a GoFile vinculado a tu cuenta personal con reintentos."""
+    """Subo el archivo a GoFile vinculado a tu cuenta personal."""
     for intento in range(1, max_reintentos + 1):
         server = obtener_servidor_gofile()
         url = f"https://{server}.gofile.io/contents/uploadfile"
@@ -144,7 +150,7 @@ def subir_a_gofile(filepath, folder_id=None, max_reintentos=5):
         if folder_id:
             payload["folderId"] = folder_id
 
-        print(f"📤 Intento {intento}/{max_reintentos}: Subiendo '{filepath}' a GoFile...", flush=True)
+        print(f"📤 Intento {intento}/{max_reintentos}: Subiendo '{filepath}' a tu GoFile...", flush=True)
 
         try:
             with open(filepath, "rb") as f:
@@ -191,7 +197,7 @@ async def procesar_juego(client, juego, todos_los_juegos):
         print(f"✅ '{titulo}' no tiene partes pendientes.", flush=True)
         return
 
-    print(f"\n🎮 Procesando resubida de '{titulo}'...", flush=True)
+    print(f"\n🎮 Procesando '{titulo}'...", flush=True)
 
     while lista_msg_ids:
         msg_id = lista_msg_ids[0]
@@ -216,7 +222,7 @@ async def procesar_juego(client, juego, todos_los_juegos):
                 if pct % 10 == 0 and pct != ultimo_porcentaje:
                     mb_down = downloaded / (1024 * 1024)
                     mb_total = total / (1024 * 1024)
-                    print(f"⬇️ Progreso descarga Telegram: {pct}% ({mb_down:.1f} / {mb_total:.1f} MB)", flush=True)
+                    print(f"⬇️ Descarga Telegram: {pct}% ({mb_down:.1f} / {mb_total:.1f} MB)", flush=True)
                     ultimo_porcentaje = pct
 
             archivo_local = await client.download_media(message, progress_callback=callback_progreso)
@@ -232,12 +238,12 @@ async def procesar_juego(client, juego, todos_los_juegos):
             if es_lista:
                 juego["telegram_message_id"] = lista_msg_ids
 
-            print(f"✨ Parte subida con éxito. Carpeta de descarga: {juego['enlace_descarga']}", flush=True)
+            print(f"✨ Parte subida con éxito: {juego['enlace_descarga']}", flush=True)
 
             guardar_progreso_y_push(todos_los_juegos)
 
         except Exception as e:
-            print(f"\n❌ Error definitivo tras reintentos en la parte {msg_id}: {e}", flush=True)
+            print(f"\n❌ Error en la parte {msg_id}: {e}", flush=True)
             print("🛑 Proceso detenido para mantener a salvo las partes subidas.", flush=True)
             break
         finally:
@@ -264,7 +270,9 @@ async def main():
         print(f"❌ ERROR: TELEGRAM_API_ID inválido.", flush=True)
         sys.exit(1)
 
-    client = TelegramClient("sesion_bot", api_id_int, API_HASH, request_retries=15, connection_retries=15, timeout=60)
+    session_obj = StringSession(SESSION_STRING) if SESSION_STRING else "sesion_bot"
+    client = TelegramClient(session_obj, api_id_int, API_HASH, request_retries=15, connection_retries=15, timeout=60)
+    
     await client.start(bot_token=BOT_TOKEN)
     print("🤖 Cliente de Telegram iniciado correctamente.", flush=True)
 
@@ -272,22 +280,21 @@ async def main():
         titulo = juego.get("titulo") or juego.get("nombre") or "Juego"
         msg_ids = juego.get("telegram_message_id")
 
-        # 1. Comprobación segura
+        # 1. Comprobación mediante ScraperAPI
         if es_enlace_valido(juego):
             continue
 
-        # 2. Solo resube si GoFile explícitamente confirmó el borrado
-        print(f"⚠️ Iniciando proceso para resubir '{titulo}'...", flush=True)
+        # 2. Solo resube si GoFile borró explícitamente la carpeta
+        print(f"⚠️ Preparando resubida de '{titulo}'...", flush=True)
         
         if msg_ids is None:
             print(f"❌ '{titulo}' no tiene telegram_message_id configurado.", flush=True)
             continue
 
-        # Limpiar enlaces antiguos antes de la nueva subida
+        # Limpiar enlaces antiguos antes de la resubida
         juego["enlace_descarga"] = ""
         juego["gofile_folder_id"] = ""
 
-        # Descargar de Telegram y subir a la cuenta de GoFile
         await procesar_juego(client, juego, juegos)
 
     await client.disconnect()
