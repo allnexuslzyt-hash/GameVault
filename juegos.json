@@ -11,9 +11,9 @@
     "etiqueta": "DESTACADO",
     "destacado": true,
     "telegram_channel_id": "-1004381947395",
-    "telegram_message_id": null,
-    "enlace_descarga": "https://gofile.io/d/BE7HcjR5",
-    "gofile_folder_id": "e97b3bea-d56c-49ee-b5f5-82a6917f0b52"
+    "telegram_message_id": 4,
+    "enlace_descarga": "",
+    "gofile_folder_id": ""
   },
   {
     "id": "lego-batman-legacy",
@@ -30,5 +30,21 @@
     "telegram_message_id": [],
     "enlace_descarga": "https://gofile.io/d/9bnOwY73",
     "gofile_folder_id": "a248b002-fe7b-463c-962e-325f00dcafd9"
+  },
+  {
+    "id": "lethal-company",
+    "titulo": "Lethal Company",
+    "sinopsis": "Eres un trabajador contratado por la Compañía. Tu trabajo consiste en recoger chatarra de lunas abandonadas e industrializadas para alcanzar la cuota de beneficios mientras sobrevives a los peligros que acechan en las sombras.",
+    "requisitos": "Intel Core i5-7400, NVIDIA GTX 1050, 8 GB RAM, Windows 10 (64-bit)",
+    "imagen": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1942280/header.jpg",
+    "tamano": "1 GB",
+    "fecha": "2026-09-05",
+    "categoria": "Terror / Cooperativo",
+    "etiqueta": "NUEVO",
+    "destacado": false,
+    "telegram_channel_id": "-1004381947395",
+    "telegram_message_id": "",
+    "enlace_descarga": "",
+    "gofile_folder_id": ""
   }
 ]
