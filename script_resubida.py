@@ -8,7 +8,7 @@ import requests
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
-print("🚀 Iniciando script_resubida.py (Con ScraperAPI Anti-Cloudflare)...", flush=True)
+print("🚀 Iniciando script_resubida.py (Con ScraperAPI Anti-Cloudflare y Auto-Padding)...", flush=True)
 
 # --- CONFIGURACIÓN Y VARIABLES DE ENTORNO ---
 API_ID = os.environ.get("TELEGRAM_API_ID")
@@ -270,7 +270,18 @@ async def main():
         print(f"❌ ERROR: TELEGRAM_API_ID inválido.", flush=True)
         sys.exit(1)
 
-    session_obj = StringSession(SESSION_STRING) if SESSION_STRING else "sesion_bot"
+    # --- AUTOCORRECCIÓN Y PADDING DE SESSION_STRING ---
+    session_str = SESSION_STRING.strip().strip("'").strip('"') if SESSION_STRING else ""
+    if session_str:
+        missing_padding = len(session_str) % 4
+        if missing_padding:
+            session_str += '=' * (4 - missing_padding)
+        session_obj = StringSession(session_str)
+        print("🔑 Cargando sesión desde TELEGRAM_SESSION_STRING (Padding corregido)...", flush=True)
+    else:
+        session_obj = "sesion_bot"
+        print("⚠️ No se detectó SESSION_STRING. Usando sesión por defecto...", flush=True)
+
     client = TelegramClient(session_obj, api_id_int, API_HASH, request_retries=15, connection_retries=15, timeout=60)
     
     await client.start(bot_token=BOT_TOKEN)
