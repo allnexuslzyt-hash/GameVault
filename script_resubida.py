@@ -7,7 +7,7 @@ import time
 import requests
 from telethon import TelegramClient
 
-print("🚀 Iniciando script_resubida.py...", flush=True)
+print("🚀 Iniciando script_resubida.py en MODO PROTEGIDO...", flush=True)
 
 # --- CONFIGURACIÓN Y VARIABLES DE ENTORNO ---
 API_ID = os.environ.get("TELEGRAM_API_ID")
@@ -55,59 +55,64 @@ def guardar_progreso_y_push(data):
 
 def es_enlace_valido(juego):
     """
-    VERIFICACIÓN ESTRICTA CON API TOKEN:
-    Si la API de GoFile no responde con HTTP 200, o si devuelve HTML/Cloudflare,
-    o si la carpeta está vacía o borrada, DEVUELVE FALSE INMEDIATAMENTE.
+    VERIFICACIÓN PROTEGIDA:
+    Solo marca como caducado (False) si GoFile confirma 100% que NO existe o está vacía.
+    Ante cualquier duda de red o falta de token, conserva el enlace (True) para no descargar todo.
     """
     folder_id = juego.get("gofile_folder_id")
     titulo = juego.get("titulo", "Juego")
 
     if not folder_id:
-        print(f"⚠️ '{titulo}' no tiene gofile_folder_id registrado. Forzando resubida...", flush=True)
+        print(f"⚠️ '{titulo}' no tiene carpeta asociada. Se programará para subir...", flush=True)
         return False
 
     if not GOFILE_TOKEN:
-        print(f"⚠️ No hay GOFILE_API_TOKEN configurado. Forzando resubida de '{titulo}'...", flush=True)
-        return False
+        print(f"⚠️ GOFILE_API_TOKEN no detectado en Secrets. Conservando '{titulo}' por seguridad.", flush=True)
+        return True
 
-    api_url = f"https://api.gofile.io/contents/{folder_id}"
+    # Pasamos el token por header y por URL para máxima compatibilidad
+    api_url = f"https://api.gofile.io/contents/{folder_id}?token={GOFILE_TOKEN}"
     headers = HEADERS_BASE.copy()
     headers["Authorization"] = f"Bearer {GOFILE_TOKEN}"
 
     try:
-        res = requests.get(api_url, headers=headers, timeout=15)
+        res = requests.get(api_url, headers=headers, timeout=12)
 
-        # 1. Si no devuelve HTTP 200 (ej. 404, 403, 500)
-        if res.status_code != 200:
-            print(f"🚨 DETECTADO: GoFile devolvió HTTP {res.status_code} para '{titulo}'. La carpeta no está disponible.", flush=True)
+        # 1. Error 404 explícito: la carpeta no existe en GoFile
+        if res.status_code == 404:
+            print(f"🚨 BORRADO CONFIRMADO (HTTP 404): '{titulo}' ya no existe en GoFile.", flush=True)
             return False
 
-        # 2. Si la respuesta es una página de Cloudflare y no un JSON
-        try:
-            data = res.json()
-        except Exception:
-            print(f"🚨 DETECTADO: La respuesta para '{titulo}' fue bloqueada por Cloudflare o no es un JSON. Forzando resubida...", flush=True)
-            return False
+        # 2. Respuesta HTTP 200 OK
+        if res.status_code == 200:
+            try:
+                data = res.json()
+                status = data.get("status")
 
-        status = data.get("status")
+                if status == "ok":
+                    children = data.get("data", {}).get("children", {})
+                    if children:
+                        print(f"✅ VERIFICADO: '{titulo}' está activo con {len(children)} archivo(s).", flush=True)
+                        return True
+                    else:
+                        print(f"🚨 BORRADO CONFIRMADO: La carpeta de '{titulo}' existe pero está VACÍA.", flush=True)
+                        return False
 
-        # 3. Si el estado de GoFile no es explícitamente "ok"
-        if status != "ok":
-            print(f"🚨 DETECTADO: Estado '{status}' en GoFile para '{titulo}'. Carpeta inexistente.", flush=True)
-            return False
+                elif status in ["error-notFound", "error-notFoundOrNotAuthorized"]:
+                    print(f"🚨 BORRADO CONFIRMADO (API '{status}'): '{titulo}' fue eliminado.", flush=True)
+                    return False
 
-        # 4. Comprobar si la carpeta tiene archivos activos
-        children = data.get("data", {}).get("children", {})
-        if not children:
-            print(f"🚨 DETECTADO: La carpeta de '{titulo}' está VACÍA en GoFile (archivos eliminados).", flush=True)
-            return False
+            except Exception:
+                print(f"⚠️ Respuesta no-JSON para '{titulo}' (posible bloqueo temporal). Conservando por seguridad...", flush=True)
+                return True
 
-        print(f"✅ VERIFICADO: '{titulo}' existe en tu cuenta con {len(children)} archivo(s) activo(s).", flush=True)
+        # Ante cualquier otro código HTTP (403 Cloudflare, 500, etc.), conservamos el juego
+        print(f"⚠️ Respuesta inusual (HTTP {res.status_code}) para '{titulo}'. Conservando enlace...", flush=True)
         return True
 
     except Exception as e:
-        print(f"🚨 EXCEPCIÓN al verificar '{titulo}' ({e}). Forzando resubida por seguridad...", flush=True)
-        return False
+        print(f"⚠️ Error de conexión comprobando '{titulo}' ({e}). Conservando enlace...", flush=True)
+        return True
 
 
 def obtener_servidor_gofile():
@@ -139,7 +144,7 @@ def subir_a_gofile(filepath, folder_id=None, max_reintentos=5):
         if folder_id:
             payload["folderId"] = folder_id
 
-        print(f"📤 Intento {intento}/{max_reintentos}: Subiendo '{filepath}' a tu cuenta de GoFile...", flush=True)
+        print(f"📤 Intento {intento}/{max_reintentos}: Subiendo '{filepath}' a GoFile...", flush=True)
 
         try:
             with open(filepath, "rb") as f:
@@ -186,7 +191,7 @@ async def procesar_juego(client, juego, todos_los_juegos):
         print(f"✅ '{titulo}' no tiene partes pendientes.", flush=True)
         return
 
-    print(f"\n🎮 Procesando '{titulo}'...", flush=True)
+    print(f"\n🎮 Procesando resubida de '{titulo}'...", flush=True)
 
     while lista_msg_ids:
         msg_id = lista_msg_ids[0]
@@ -267,15 +272,15 @@ async def main():
         titulo = juego.get("titulo") or juego.get("nombre") or "Juego"
         msg_ids = juego.get("telegram_message_id")
 
-        # 1. Comprobación estricta de la carpeta
+        # 1. Comprobación segura
         if es_enlace_valido(juego):
             continue
 
-        # 2. Si la carpeta NO es válida, procede a la resubida
-        print(f"⚠️ Preparando resubida de '{titulo}'...", flush=True)
+        # 2. Solo resube si GoFile explícitamente confirmó el borrado
+        print(f"⚠️ Iniciando proceso para resubir '{titulo}'...", flush=True)
         
         if msg_ids is None:
-            print(f"❌ '{titulo}' no tiene telegram_message_id configurado para resubir.", flush=True)
+            print(f"❌ '{titulo}' no tiene telegram_message_id configurado.", flush=True)
             continue
 
         # Limpiar enlaces antiguos antes de la nueva subida
