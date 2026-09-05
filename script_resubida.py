@@ -8,7 +8,7 @@ import requests
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
-print("🚀 Iniciando script_resubida.py (Con ScraperAPI Anti-Cloudflare, Headers y Fallback)...", flush=True)
+print("🚀 Iniciando script_resubida.py (Verificación Limpia GoFile + Telegram)...", flush=True)
 
 # --- CONFIGURACIÓN Y VARIABLES DE ENTORNO ---
 API_ID = os.environ.get("TELEGRAM_API_ID")
@@ -57,10 +57,10 @@ def guardar_progreso_y_push(data):
 
 def es_enlace_valido(juego):
     """
-    VERIFICACIÓN CON SCRAPERAPI Y FALLBACK DIRECTO:
-    1. Consulta a través de ScraperAPI con keep_headers=true.
-    2. Si ScraperAPI falla o devuelve HTTP 500/timeout, intenta una consulta directa a GoFile.
-    3. Solo marca como caducado (False) si GoFile confirma al 100% que la carpeta NO existe o está VACÍA.
+    VERIFICACIÓN MEJORADA DE GOFILE:
+    Realiza una consulta limpia a la API pública de GoFile para verificar si la carpeta existe.
+    Si ScraperAPI está disponible se usa como primer intento; de lo contrario o ante fallos,
+    pasa a conexión directa sin tokens extra extraños que provoquen HTTP 401.
     """
     folder_id = juego.get("gofile_folder_id")
     titulo = juego.get("titulo") or juego.get("nombre") or "Juego"
@@ -70,35 +70,34 @@ def es_enlace_valido(juego):
         return False
 
     gofile_url = f"https://api.gofile.io/contents/{folder_id}"
-    headers = HEADERS_BASE.copy()
-    if GOFILE_TOKEN:
-        headers["Authorization"] = f"Bearer {GOFILE_TOKEN}"
+    
+    # Headers limpios sin Token de autorización para lectura pública (evita error 401)
+    headers_consulta = HEADERS_BASE.copy()
 
     res = None
 
-    # Intento 1: A través de ScraperAPI si está disponible
+    # Intento 1: Vía ScraperAPI
     if SCRAPER_KEY:
-        # keep_headers=true reenvía el token Authorization a GoFile
-        api_url = f"https://api.scraperapi.com?api_key={SCRAPER_KEY}&url={gofile_url}&keep_headers=true&country_code=us"
+        api_url = f"https://api.scraperapi.com?api_key={SCRAPER_KEY}&url={gofile_url}"
         try:
-            res = requests.get(api_url, headers=headers, timeout=40)
-            if res.status_code >= 500:
-                print(f"⚠️ ScraperAPI devolvió HTTP {res.status_code} para '{titulo}'. Intentando conexión directa...", flush=True)
+            res = requests.get(api_url, headers=headers_consulta, timeout=25)
+            if res.status_code >= 500 or res.status_code == 401:
+                print(f"⚠️ ScraperAPI falló (HTTP {res.status_code}) para '{titulo}'. Probando conexión directa...", flush=True)
                 res = None
         except Exception as e:
-            print(f"⚠️ Error en ScraperAPI para '{titulo}' ({e}). Intentando conexión directa...", flush=True)
+            print(f"⚠️ Error en ScraperAPI para '{titulo}' ({e}). Probando conexión directa...", flush=True)
 
-    # Intento 2: Fallback a conexión directa con GoFile
+    # Intento 2: Conexión directa
     if res is None:
         try:
-            res = requests.get(gofile_url, headers=headers, timeout=20)
+            res = requests.get(gofile_url, headers=headers_consulta, timeout=15)
         except Exception as e:
-            print(f"⚠️ Error de conexión directa para '{titulo}' ({e}). CONSERVANDO ENLACE.", flush=True)
+            print(f"⚠️ Error de conexión directa para '{titulo}' ({e}). CONSERVANDO ENLACE por seguridad.", flush=True)
             return True
 
-    # Evaluación de resultados de GoFile
-    if res.status_code == 404:
-        print(f"🚨 BORRADO CONFIRMADO (404): '{titulo}' ya no existe en GoFile.", flush=True)
+    # Evaluación del resultado
+    if res.status_code in [404, 401]:
+        print(f"🚨 BORRADO CONFIRMADO (HTTP {res.status_code}): '{titulo}' no está accesible o no existe.", flush=True)
         return False
 
     if res.status_code == 200:
@@ -120,7 +119,7 @@ def es_enlace_valido(juego):
                 return False
 
         except Exception:
-            print(f"⚠️ Respuesta no-JSON para '{titulo}'. CONSERVANDO ENLACE por seguridad.", flush=True)
+            print(f"⚠️ Respuesta no-JSON para '{titulo}'. CONSERVANDO ENLACE.", flush=True)
             return True
 
     print(f"⚠️ Respuesta inusual HTTP {res.status_code} para '{titulo}'. CONSERVANDO ENLACE.", flush=True)
@@ -276,7 +275,7 @@ async def main():
         print(f"❌ ERROR: TELEGRAM_API_ID inválido.", flush=True)
         sys.exit(1)
 
-    # --- AJUSTE EXACTO DE SESIÓN BASE64 ---
+    # --- SINITIZACIÓN DE SESIÓN ---
     session_raw = SESSION_STRING.strip().strip("'").strip('"').replace("\n", "").replace("\r", "").replace(" ", "")
     
     session_obj = "sesion_bot"
