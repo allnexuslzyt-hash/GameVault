@@ -54,54 +54,51 @@ def guardar_progreso_y_push(data):
 
 def es_enlace_valido(juego):
     """
-    Verifica si la carpeta de GoFile sigue existiendo en sus servidores.
-    Solo marca como caducado si GoFile confirma explícitamente un error 404 o 'notFound'.
+    DETECCIÓN ESTRICTA:
+    1. Si HTTP != 200 -> FALSO
+    2. Si status de GoFile != 'ok' -> FALSO (Carpeta borrada/inexistente)
+    3. Si status == 'ok' pero la lista de archivos está vacía -> FALSO (Archivos borrados)
     """
     folder_id = juego.get("gofile_folder_id")
-    url = juego.get("enlace_descarga")
+    titulo = juego.get("titulo", "Juego")
 
-    if not folder_id and not url:
+    if not folder_id:
+        print(f"⚠️ '{titulo}' no tiene gofile_folder_id registrado. Forzando resubida...", flush=True)
         return False
 
-    if folder_id:
-        try:
-            api_url = f"https://api.gofile.io/contents/{folder_id}"
-            headers = HEADERS_BASE.copy()
-            if GOFILE_TOKEN:
-                headers["Authorization"] = f"Bearer {GOFILE_TOKEN}"
+    try:
+        api_url = f"https://api.gofile.io/contents/{folder_id}"
+        headers = HEADERS_BASE.copy()
+        if GOFILE_TOKEN:
+            headers["Authorization"] = f"Bearer {GOFILE_TOKEN}"
 
-            res = requests.get(api_url, headers=headers, timeout=10)
+        res = requests.get(api_url, headers=headers, timeout=10)
 
-            if res.status_code == 200:
-                data = res.json()
-                if data.get("status") == "ok":
-                    return True
-                elif data.get("status") in ["error-notFound", "error-notFoundOrNotAuthorized"]:
-                    print(f"⚠️ La carpeta de '{juego.get('titulo')}' ya NO existe en GoFile (Caducada).", flush=True)
-                    return False
+        # 1. Comprobación HTTP básica
+        if res.status_code != 200:
+            print(f"🚨 DETECTADO: GoFile devolvió HTTP {res.status_code} para '{titulo}'. La carpeta NO existe.", flush=True)
+            return False
 
-            if res.status_code == 404:
-                print(f"⚠️ GoFile devolvió 404 para '{juego.get('titulo')}'. Se creará una carpeta nueva.", flush=True)
-                return False
+        data = res.json()
+        status = data.get("status")
 
-            print(f"⚠️ Respuesta inusual de GoFile (HTTP {res.status_code}) para '{juego.get('titulo')}'. Conservando carpeta por seguridad.", flush=True)
-            return True
+        # 2. Regla estricta de estado API
+        if status != "ok":
+            print(f"🚨 DETECTADO: GoFile devolvió estado '{status}' para '{titulo}'. La carpeta fue ELIMINADA.", flush=True)
+            return False
 
-        except Exception as e:
-            print(f"⚠️ Error de conexión verificando GoFile ({e}). Conservando carpeta por seguridad.", flush=True)
-            return True
+        # 3. Regla estricta de contenido (¿Hay archivos reales dentro?)
+        children = data.get("data", {}).get("children", {})
+        if not children:
+            print(f"🚨 DETECTADO: La carpeta de '{titulo}' existe pero está VACÍA (archivos borrados).", flush=True)
+            return False
 
-    if url:
-        try:
-            res = requests.get(url, headers=HEADERS_BASE, timeout=10, allow_redirects=True)
-            if res.status_code == 200:
-                return True
-            if res.status_code == 404:
-                return False
-        except Exception:
-            pass
+        print(f"✅ VERIFICADO: La carpeta de '{titulo}' existe y tiene {len(children)} archivo(s) activo(s).", flush=True)
+        return True
 
-    return True
+    except Exception as e:
+        print(f"⚠️ Error de conexión/comprobación para '{titulo}' ({e}). Se reintentará resubida por seguridad.", flush=True)
+        return False
 
 
 def obtener_servidor_gofile():
@@ -214,7 +211,6 @@ async def procesar_juego(client, juego, todos_los_juegos):
             folder_id = parent_folder
 
             lista_msg_ids.pop(0)
-            # MANTENER el ID si es un solo número para que pueda resubirse si caduca en el futuro
             if es_lista:
                 juego["telegram_message_id"] = lista_msg_ids
 
@@ -258,19 +254,18 @@ async def main():
         titulo = juego.get("titulo") or juego.get("nombre") or "Juego"
         msg_ids = juego.get("telegram_message_id")
 
-        # 1. Comprobar si la carpeta en GoFile existe y está activa
+        # 1. Comprobación estricta de existencia en GoFile
         if es_enlace_valido(juego):
-            print(f"✅ '{titulo}' ya está completado y la carpeta en GoFile está activa. Saltando...", flush=True)
             continue
 
-        # 2. Si la carpeta NO existe (borrada) o el enlace está vacío:
-        print(f"⚠️ La carpeta de '{titulo}' no existe o ha caducado en GoFile.", flush=True)
+        # 2. Si la carpeta NO existe o está vacía:
+        print(f"⚠️ Resubiendo '{titulo}'...", flush=True)
         
         if msg_ids is None:
             print(f"❌ '{titulo}' no tiene telegram_message_id configurado para resubir.", flush=True)
             continue
 
-        # Limpiar referencias viejas antes de volver a subir
+        # Limpiar datos antiguos para generar la carpeta limpia
         juego["enlace_descarga"] = ""
         juego["gofile_folder_id"] = ""
 
